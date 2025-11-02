@@ -1,24 +1,17 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { TOKENS } from './tokens';
 import type { ReferralRepository, UserRepository, LedgerRepository, IdempotencyStore } from './ports/repositories';
-import { ReferralService } from '../infrastructure/services/referral.service';
-import { CommissionService } from '../infrastructure/services/commission.service';
-import { DefaultPolicy } from '../domain/policies/commission-policy';
+// Domain contains only interfaces. Implementations live in application/infrastructure.
 
 @Injectable()
 export class ReferralAppService {
-  private readonly referralDomain: ReferralService;
-  private readonly commission: CommissionService;
 
   constructor(
     @Inject(TOKENS.UserRepository) private readonly userRepo: UserRepository,
     @Inject(TOKENS.ReferralRepository) private readonly refRepo: ReferralRepository,
     @Inject(TOKENS.LedgerRepository) private readonly ledgerRepo: LedgerRepository,
     @Inject(TOKENS.IdempotencyStore) private readonly idem: IdempotencyStore,
-  ) {
-    this.referralDomain = new ReferralService(this.refRepo);
-    this.commission = new CommissionService(new DefaultPolicy());
-  }
+  ) {}
 
   async createOrGetReferralCode(userId: string): Promise<string> {
     return this.userRepo.createOrGetReferralCode(userId);
@@ -31,7 +24,13 @@ export class ReferralAppService {
   async registerReferralByCode(userId: string, code: string): Promise<number> {
     const ref = await this.userRepo.findByReferralCode(code);
     if (!ref) throw new Error('Referral code not found');
-    const level = await this.referralDomain.computeLevelOrThrow(userId, ref.id);
+    // Inline validation rules
+    if (userId === ref.id) throw new Error('Cannot self-refer');
+    if (await this.refRepo.hasReferrer(userId)) throw new Error('Referrer already set');
+    const referrerAncestors = await this.refRepo.getAncestors(ref.id, 10);
+    if (referrerAncestors.includes(userId)) throw new Error('Cycle detected');
+    const level = (referrerAncestors.length ?? 0) + 1;
+    if (level > 3) throw new Error('Depth exceeds 3 levels');
     await this.refRepo.createLink(ref.id, userId, level);
     return level;
   }

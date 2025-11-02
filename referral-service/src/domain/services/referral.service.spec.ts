@@ -1,4 +1,4 @@
-import { ReferralService } from './referral.service';
+import { ReferralService } from '../../infrastructure/services/referral.service';
 import { ReferralRepository } from '../../application/ports/repositories';
 
 class InMemoryReferralRepo implements ReferralRepository {

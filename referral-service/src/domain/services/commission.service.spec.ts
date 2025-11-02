@@ -1,5 +1,5 @@
-import { CommissionService } from './commission.service';
-import { DefaultPolicy } from '../policies/commission-policy';
+import { CommissionService } from '../../infrastructure/services/commission.service';
+import { DefaultPolicy } from '../../infrastructure/policies/default-policy';
 
 describe('CommissionService', () => {
   it('delegates to policy and returns splits', () => {

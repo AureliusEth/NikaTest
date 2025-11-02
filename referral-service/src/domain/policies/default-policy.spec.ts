@@ -1,4 +1,4 @@
-import { DefaultPolicy } from './commission-policy';
+import { DefaultPolicy } from '../../infrastructure/policies/default-policy';
 
 describe('DefaultPolicy', () => {
   it('splits cashback and 3 upline levels', () => {
