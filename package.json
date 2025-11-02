@@ -1,0 +1,24 @@
+{
+  "name": "referral-monorepo",
+  "private": true,
+  "version": "0.1.0",
+  "scripts": {
+    "install:all": "npm --prefix referral-service i && npm --prefix frontend i",
+    "db:podman:start": "podman run --name referral_postgres -e POSTGRES_USER=postgres -e POSTGRES_PASSWORD=postgres -e POSTGRES_DB=referral -p 5432:5432 -d docker.io/library/postgres:16-alpine",
+    "db:podman:stop": "podman rm -f referral_postgres || true",
+    "db:docker:up": "docker compose up -d",
+    "db:docker:down": "docker compose down",
+    "prisma:migrate": "cd referral-service && npx prisma migrate dev -n init",
+    "backend:dev": "cd referral-service && npm run start:dev",
+    "backend:build": "cd referral-service && npm run build",
+    "backend:test": "cd referral-service && npm test",
+    "frontend:dev": "cd frontend && npm run dev",
+    "frontend:build": "cd frontend && npm run build",
+    "dev": "bash -lc 'npm run backend:dev & npm run frontend:dev & wait'",
+    "build": "npm run backend:build && npm run frontend:build",
+    "test": "npm run backend:test"
+  }
+}
+
+
+

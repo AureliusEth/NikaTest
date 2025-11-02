@@ -1,0 +1,61 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client"
+  output   = "../node_modules/.prisma/client"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id              String   @id @default(cuid())
+  email           String   @unique
+  referralCode    String?  @unique
+  feeCashbackRate Decimal  @db.Decimal(5, 4) @default(0)
+  createdAt       DateTime @default(now())
+}
+
+model ReferralLink {
+  referrerId String
+  refereeId  String   @unique
+  level      Int
+  createdAt  DateTime @default(now())
+
+  @@id([referrerId, refereeId])
+  @@index([referrerId, level])
+}
+
+model Trade {
+  id        String   @id @default(cuid())
+  userId    String
+  feeAmount Decimal  @db.Decimal(18, 8)
+  createdAt DateTime @default(now())
+
+  @@index([userId, createdAt])
+}
+
+model CommissionLedgerEntry {
+  id            String   @id @default(cuid())
+  beneficiaryId String
+  sourceTradeId String
+  level         Int
+  rate          Decimal  @db.Decimal(5, 4)
+  amount        Decimal  @db.Decimal(18, 8)
+  token         String   @default("XP")
+  createdAt     DateTime @default(now())
+
+  @@unique([beneficiaryId, sourceTradeId, level])
+  @@index([beneficiaryId, createdAt])
+}
+
+model IdempotencyKey {
+  key       String   @id
+  createdAt DateTime @default(now())
+}
