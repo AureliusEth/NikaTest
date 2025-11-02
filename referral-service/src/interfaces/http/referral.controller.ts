@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Post, Req, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Post, Req, UseGuards, Query } from '@nestjs/common';
 import { FakeAuthGuard } from '../../common/guards/fake-auth.guard';
 import { ReferralAppService } from '../../application/referral.app.service';
 import { ReferralRegisterDto } from './dto/referral-register.dto';
@@ -28,6 +28,16 @@ export class ReferralController {
   @Get('earnings')
   async earnings(@Req() req: any) {
     return this.app.getEarnings(req.user.id);
+  }
+
+  @Get('dashboard')
+  async dashboard(@Req() req: any) {
+    return this.app.getDashboard(req.user.id);
+  }
+
+  @Get('activity')
+  async activity(@Req() req: any, @Query('limit') limit?: string) {
+    return this.app.getActivity(req.user.id, limit ? parseInt(limit, 10) : 50);
   }
 }
 

@@ -38,6 +38,50 @@ export class PrismaLedgerRepository implements LedgerRepository {
     }
     return { total, byLevel };
   }
+
+  async getEarningsFromReferee(userId: string, refereeId: string): Promise<{ total: number; totalFees: number; entries: Array<{ tradeId: string; amount: number; rate: number; level: number; createdAt: Date }> }> {
+    // Get all trades made by the referee
+    const trades = await this.prisma.trade.findMany({
+      where: { userId: refereeId },
+      select: { id: true, feeAmount: true },
+    });
+
+    const tradeIds = trades.map(t => t.id);
+    const tradeFeeMap = new Map(trades.map(t => [t.id, Number(t.feeAmount)]));
+
+    // Get all commission entries for this user from trades made by the referee
+    const entries = await this.prisma.commissionLedgerEntry.findMany({
+      where: {
+        beneficiaryId: userId,
+        sourceTradeId: { in: tradeIds },
+      },
+      orderBy: { createdAt: 'desc' },
+      select: {
+        sourceTradeId: true,
+        amount: true,
+        rate: true,
+        level: true,
+        createdAt: true,
+      },
+    });
+
+    let total = 0;
+    const totalFees = trades.reduce((sum, t) => sum + Number(t.feeAmount), 0);
+
+    const entryList = entries.map(e => {
+      const amount = Number(e.amount);
+      total += amount;
+      return {
+        tradeId: e.sourceTradeId,
+        amount,
+        rate: Number(e.rate),
+        level: e.level,
+        createdAt: e.createdAt,
+      };
+    });
+
+    return { total, totalFees, entries: entryList };
+  }
 }
 
 

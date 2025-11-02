@@ -146,6 +146,8 @@ export default function Home() {
 
         {/* Minimal links row, aligned with Kraken footer spacing */}
         <div className="px-4 pb-16" style={{ display: 'flex', gap: 12, justifyContent: 'center' }}>
+          <Link href="/dashboard" className="form-subtle">Dashboard</Link>
+          <span className="form-subtle">•</span>
           <Link href="/referral" className="form-subtle">Generate code</Link>
           <span className="form-subtle">•</span>
           <Link href="/referral/register" className="form-subtle">Register</Link>

@@ -23,6 +23,8 @@ export interface ReferralRepository {
   createLink(referrerId: string, refereeId: string, level: number): Promise<void>;
   /** Direct referrals of a given user */
   getDirectReferees(userId: string): Promise<string[]>;
+  /** Get all referrals (direct and indirect) with their levels */
+  getAllReferees(userId: string): Promise<Array<{ refereeId: string; level: number }>>;
 }
 
 export interface LedgerEntryDTO {
@@ -40,6 +42,8 @@ export interface LedgerRepository {
     userId: string,
     range?: { from?: Date; to?: Date }
   ): Promise<{ total: number; byLevel: Record<number, number> }>;
+  /** Get earnings from a specific referee */
+  getEarningsFromReferee(userId: string, refereeId: string): Promise<{ total: number; totalFees: number; entries: Array<{ tradeId: string; amount: number; rate: number; level: number; createdAt: Date }> }>;
 }
 
 export interface IdempotencyStore {
@@ -49,6 +53,7 @@ export interface IdempotencyStore {
 
 export interface TradesRepository {
   createTrade(tradeId: string, userId: string, feeAmount: number): Promise<void>;
+  getTradesByUser(userId: string, limit?: number): Promise<Array<{ id: string; feeAmount: number; createdAt: Date }>>;
 }
 
 

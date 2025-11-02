@@ -31,6 +31,15 @@ export class PrismaReferralRepository implements ReferralRepository {
     const rows = await this.prisma.referralLink.findMany({ where: { referrerId: userId }, select: { refereeId: true } });
     return rows.map(r => r.refereeId);
   }
+
+  async getAllReferees(userId: string): Promise<Array<{ refereeId: string; level: number }>> {
+    // Get all referrals across all levels (1, 2, 3)
+    const rows = await this.prisma.referralLink.findMany({
+      where: { referrerId: userId },
+      select: { refereeId: true, level: true },
+    });
+    return rows.map(r => ({ refereeId: r.refereeId, level: r.level }));
+  }
 }
 
 

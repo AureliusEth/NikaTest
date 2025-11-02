@@ -72,10 +72,17 @@ export function useEarnings() {
 	};
 }
 
-export function useMockTrades() {
-	const port = useTradesPort();
+export function useDashboard() {
+	const port = useReferralPort();
 	return {
-		process: (input: { tradeId: string; userId: string; feeAmount: number; token?: string }) => port.processMockTrade(input),
+		load: () => port.getDashboard(),
+	};
+}
+
+export function useActivity() {
+	const port = useReferralPort();
+	return {
+		load: (limit?: number) => port.getActivity(limit),
 	};
 }
 

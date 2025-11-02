@@ -14,6 +14,28 @@ export class HttpReferralAdapter implements ReferralPort {
 	async getEarnings(): Promise<{ total: number; byLevel: Record<number, number> }> {
 		return api('/api/referral/earnings');
 	}
+	async getDashboard(): Promise<{
+		totalXP: number;
+		referralsCount: number;
+		referrals: Array<{
+			refereeId: string;
+			level: number;
+			totalFeesEarned: number;
+			totalXPGenerated: number;
+			feePercentage: number;
+			email?: string;
+		}>;
+	}> {
+		return api('/api/referral/dashboard');
+	}
+	async getActivity(limit?: number): Promise<Array<{
+		tradeId: string;
+		feeAmount: number;
+		createdAt: string;
+	}>> {
+		const url = limit ? `/api/referral/activity?limit=${limit}` : '/api/referral/activity';
+		return api(url);
+	}
 }
 
 export class HttpTradesAdapter implements TradesPort {

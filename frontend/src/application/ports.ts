@@ -3,6 +3,23 @@ export interface ReferralPort {
 	registerByCode(code: string): Promise<{ level: number }>
 	getNetwork(): Promise<{ level1: string[]; level2: string[]; level3: string[] }>
 	getEarnings(): Promise<{ total: number; byLevel: Record<number, number> }>
+	getDashboard(): Promise<{
+		totalXP: number;
+		referralsCount: number;
+		referrals: Array<{
+			refereeId: string;
+			level: number;
+			totalFeesEarned: number;
+			totalXPGenerated: number;
+			feePercentage: number;
+			email?: string;
+		}>;
+	}>
+	getActivity(limit?: number): Promise<Array<{
+		tradeId: string;
+		feeAmount: number;
+		createdAt: string;
+	}>>
 }
 
 export interface TradesPort {
