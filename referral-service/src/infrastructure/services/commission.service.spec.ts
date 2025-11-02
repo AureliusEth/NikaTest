@@ -1,5 +1,5 @@
 import { CommissionService } from './commission.service';
-import { DefaultPolicy } from '../../domain/policies/commission-policy';
+import { DefaultPolicy } from '../policies/default-policy';
 
 describe('CommissionService', () => {
   it('rejects negative fees', () => {

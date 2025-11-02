@@ -1,12 +1,20 @@
-import { CommissionPolicy, CommissionContext, Split } from '../policies/commission-policy';
+import { CommissionContext, Split } from '../policies/commission-policy';
 
-export class CommissionService {
-  constructor(private readonly policy: CommissionPolicy) {}
-
-  computeSplits(tradeFee: number, ctx: CommissionContext): Split[] {
-    if (tradeFee < 0) throw new Error('Fee cannot be negative');
-    return this.policy.calculateSplits(tradeFee, ctx);
-  }
+/**
+ * Commission Service Interface (Domain Layer)
+ * 
+ * Defines the contract for computing commission splits.
+ * Implementations live in the infrastructure layer.
+ */
+export interface CommissionService {
+  /**
+   * Computes commission splits for a given trade fee.
+   * @param tradeFee - The trade fee amount (must be non-negative)
+   * @param ctx - Context containing user info, ancestors, and cashback rate
+   * @returns Array of commission splits with beneficiaries and amounts
+   * @throws Error if tradeFee is negative
+   */
+  computeSplits(tradeFee: number, ctx: CommissionContext): Split[];
 }
 
 

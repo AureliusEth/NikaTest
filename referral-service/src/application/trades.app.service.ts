@@ -2,7 +2,7 @@ import { Inject, Injectable } from '@nestjs/common';
 import { TOKENS } from './tokens';
 import type { IdempotencyStore, LedgerRepository, TradesRepository, ReferralRepository, UserRepository } from './ports/repositories';
 import { CommissionService } from '../infrastructure/services/commission.service';
-import { DefaultPolicy } from '../domain/policies/commission-policy';
+import { DefaultPolicy } from '../infrastructure/policies/default-policy';
 
 @Injectable()
 export class TradesAppService {
