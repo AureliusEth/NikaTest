@@ -1,0 +1,9 @@
+[submodule "referral-service/contracts/lib/forge-std"]
+	path = referral-service/contracts/lib/forge-std
+	url = https://github.com/foundry-rs/forge-std
+[submodule "contracts/lib/forge-std"]
+	path = contracts/lib/forge-std
+	url = https://github.com/foundry-rs/forge-std
+[submodule "contracts/evm/lib/openzeppelin-contracts"]
+	path = contracts/evm/lib/openzeppelin-contracts
+	url = https://github.com/OpenZeppelin/openzeppelin-contracts
