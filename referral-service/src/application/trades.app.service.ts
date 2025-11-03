@@ -3,6 +3,7 @@ import { TOKENS } from './tokens';
 import type { IdempotencyStore, LedgerRepository, TradesRepository, ReferralRepository, UserRepository } from './ports/repositories';
 import { CommissionService } from '../infrastructure/services/commission.service';
 import { DefaultPolicy } from '../infrastructure/policies/default-policy';
+import { ClaimService } from '../infrastructure/services/claim.service';
 
 @Injectable()
 export class TradesAppService {
@@ -14,6 +15,7 @@ export class TradesAppService {
     @Inject(TOKENS.LedgerRepository) private readonly ledgerRepo: LedgerRepository,
     @Inject(TOKENS.ReferralRepository) private readonly referralRepo: ReferralRepository,
     @Inject(TOKENS.UserRepository) private readonly userRepo: UserRepository,
+    private readonly claimService: ClaimService,
   ) {}
 
   async processTrade(params: { 
@@ -27,6 +29,7 @@ export class TradesAppService {
     if (await this.idem.exists(key)) return;
     
     const chain = params.chain ?? 'EVM';
+    const token = params.token ?? 'XP';
     await this.tradesRepo.createTrade(params.tradeId, params.userId, params.feeAmount, chain);
 
     const user = await this.userRepo.findById(params.userId);
@@ -35,7 +38,7 @@ export class TradesAppService {
       userId: params.userId,
       userCashbackRate: user?.feeCashbackRate ?? 0,
       ancestors,
-      token: params.token ?? 'XP',
+      token,
       chain,
     });
     
@@ -51,6 +54,13 @@ export class TradesAppService {
         destination: s.destination,
       }))
     );
+
+    // Update treasury balance for treasury splits
+    const treasurySplits = splits.filter(s => s.destination === 'treasury');
+    for (const split of treasurySplits) {
+      await this.claimService.updateTreasuryBalance(chain, token, split.amount);
+    }
+
     await this.idem.put(key);
   }
 }

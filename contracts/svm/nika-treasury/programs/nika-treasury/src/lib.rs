@@ -45,15 +45,18 @@ pub mod nika_treasury {
         
         Ok(valid)
     }
+
     pub fn viewRoot(ctx: Context<ViewRoot>) -> Result<[u8; 32]> {
         let state = &ctx.accounts.state;
         Ok(state.merkle_root)
     }
 }
+
 #[derive(Accounts)]
 pub struct ViewRoot<'info> {
     pub state: Account<'info, State>,
 }
+
 #[derive(Accounts)]
 pub struct Initialize<'info> {
     #[account(init, payer = authority, space = 8 + State::LEN)]
@@ -75,12 +78,14 @@ pub struct VerifyProof<'info> {
     pub state: Account<'info, State>,
     pub user: Signer<'info>,
 }
+
 #[account]
 pub struct State {
     pub merkle_root: [u8; 32],
     pub version: u64,
     pub authority: Pubkey,
 }
+
 impl State {
     pub const LEN: usize =  32 + 8 + 32;
 }

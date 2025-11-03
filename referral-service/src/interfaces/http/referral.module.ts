@@ -7,16 +7,19 @@ import { MerkleController } from './merkle.controller';
 import { ReferralAppService } from '../../application/referral.app.service';
 import { TradesAppService } from '../../application/trades.app.service';
 import { PrismaModule } from '../../infrastructure/prisma/prisma.module';
+import { BlockchainModule } from '../../infrastructure/blockchain/blockchain.module';
 import { ReferralService } from '../../infrastructure/services/referral.service';
 import { CommissionService } from '../../infrastructure/services/commission.service';
 import { MerkleTreeService } from '../../infrastructure/services/merkle-tree.service';
 import { FeeBundlingService } from '../../infrastructure/services/fee-bundling.service';
+import { ScheduledTasksService } from '../../infrastructure/services/scheduled-tasks.service';
+import { ClaimService } from '../../infrastructure/services/claim.service';
 import { DefaultPolicy } from '../../infrastructure/policies/default-policy';
 import { AuthService } from '../../common/auth/auth.service';
 import { SessionAuthGuard } from '../../common/guards/session-auth.guard';
 
 @Module({
-  imports: [PrismaModule],
+  imports: [PrismaModule, BlockchainModule],
   controllers: [ReferralController, TradesController, UserController, AuthController, MerkleController],
   providers: [
     ReferralAppService,
@@ -25,6 +28,8 @@ import { SessionAuthGuard } from '../../common/guards/session-auth.guard';
     CommissionService,
     MerkleTreeService,
     FeeBundlingService,
+    ScheduledTasksService,
+    ClaimService,
     DefaultPolicy,
     AuthService,
     SessionAuthGuard,
