@@ -76,3 +76,32 @@ model MerkleRoot {
   @@unique([chain, token, version])
   @@index([chain, token, createdAt])
 }
+
+model TreasuryAccount {
+  id        String   @id @default(cuid())
+  chain     String   // EVM or SVM
+  token     String   // XP, USDC, etc.
+  address   String   // Treasury wallet address
+  balance   Decimal  @db.Decimal(18, 8) @default(0) // Total XP owed to treasury
+  claimed   Decimal  @db.Decimal(18, 8) @default(0) // Amount already transferred
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  @@unique([chain, token, address])
+  @@index([chain, token])
+}
+
+model ClaimRecord {
+  id            String   @id @default(cuid())
+  userId        String   // User who claimed
+  chain         String   // EVM or SVM
+  token         String   // XP, USDC, etc.
+  amount        Decimal  @db.Decimal(18, 8)
+  merkleVersion Int      // Version of merkle root used
+  txHash        String?  // Transaction hash
+  claimedAt     DateTime @default(now())
+  
+  @@unique([userId, chain, token, merkleVersion])
+  @@index([userId, chain, token])
+  @@index([chain, token, claimedAt])
+}
