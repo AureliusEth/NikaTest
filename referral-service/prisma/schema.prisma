@@ -36,26 +36,43 @@ model Trade {
   id        String   @id @default(cuid())
   userId    String
   feeAmount Decimal  @db.Decimal(18, 8)
+  chain     String   @default("EVM") // EVM (Arbitrum) or SVM (Solana)
   createdAt DateTime @default(now())
 
   @@index([userId, createdAt])
+  @@index([chain, createdAt])
 }
 
 model CommissionLedgerEntry {
   id            String   @id @default(cuid())
   beneficiaryId String
   sourceTradeId String
-  level         Int
+  level         Int      // -1 = treasury; 0 = cashback; 1-3 = upline levels
   rate          Decimal  @db.Decimal(5, 4)
   amount        Decimal  @db.Decimal(18, 8)
   token         String   @default("XP")
+  destination   String   @default("claimable") // treasury or claimable
   createdAt     DateTime @default(now())
 
   @@unique([beneficiaryId, sourceTradeId, level])
   @@index([beneficiaryId, createdAt])
+  @@index([destination, token])
 }
 
 model IdempotencyKey {
   key       String   @id
   createdAt DateTime @default(now())
+}
+
+model MerkleRoot {
+  id        String   @id @default(cuid())
+  chain     String   // EVM or SVM
+  token     String   // XP, USDC, etc.
+  root      String   // The merkle root hash
+  version   Int      // Incrementing version number
+  leafCount Int      // Number of leaves in the tree
+  createdAt DateTime @default(now())
+  
+  @@unique([chain, token, version])
+  @@index([chain, token, createdAt])
 }

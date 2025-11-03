@@ -29,6 +29,16 @@ export class ReferralController {
   async earnings(@Req() req: any) {
     return this.app.getEarnings(req.user.id);
   }
+
+  @Get('dashboard')
+  async dashboard(@Req() req: any) {
+    return this.app.getDashboard(req.user.id);
+  }
+
+  @Get('activity')
+  async activity(@Req() req: any) {
+    return this.app.getActivity(req.user.id);
+  }
 }
 
 
