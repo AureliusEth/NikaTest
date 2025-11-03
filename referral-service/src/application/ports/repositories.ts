@@ -28,10 +28,27 @@ export interface ReferralRepository {
 export interface LedgerEntryDTO {
   beneficiaryId: string;
   sourceTradeId: string;
-  level: number; // 0 cashback; 1..3 uplines
+  level: number; // -1 treasury; 0 cashback; 1..3 uplines
   rate: number; // fraction 0..1
   amount: number; // decimal as number for tests
   token: string;
+  destination: 'treasury' | 'claimable';
+}
+
+export interface RefereeEarnings {
+  refereeId: string;
+  level: number;
+  totalEarned: number;
+  tradeCount: number;
+}
+
+export interface TradeActivity {
+  tradeId: string;
+  userId: string;
+  feeAmount: number;
+  earnedAmount: number;
+  level: number;
+  createdAt: Date;
 }
 
 export interface LedgerRepository {
@@ -40,6 +57,8 @@ export interface LedgerRepository {
     userId: string,
     range?: { from?: Date; to?: Date }
   ): Promise<{ total: number; byLevel: Record<number, number> }>;
+  getRefereeEarnings(userId: string): Promise<RefereeEarnings[]>;
+  getRecentActivity(userId: string, limit?: number): Promise<TradeActivity[]>;
 }
 
 export interface IdempotencyStore {
@@ -48,7 +67,12 @@ export interface IdempotencyStore {
 }
 
 export interface TradesRepository {
-  createTrade(tradeId: string, userId: string, feeAmount: number): Promise<void>;
+  createTrade(
+    tradeId: string, 
+    userId: string, 
+    feeAmount: number, 
+    chain?: 'EVM' | 'SVM'
+  ): Promise<void>;
 }
 
 

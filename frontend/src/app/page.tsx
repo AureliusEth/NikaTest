@@ -10,6 +10,7 @@ export default function Home() {
   const [error, setError] = useState<string>('');
   const [success, setSuccess] = useState<string>('');
   const [showWelcome, setShowWelcome] = useState(false);
+  const [showGenerateModal, setShowGenerateModal] = useState(false);
   const [refCode, setRefCode] = useState<string>('');
   const [mounted, setMounted] = useState(false);
 
@@ -23,32 +24,31 @@ export default function Home() {
   const handleNext = async () => {
     setError('');
     setSuccess('');
-    // derive a valid user id from email (min 6 chars)
-    const base = (email || '').trim().toUpperCase();
-    const userId = base.length >= 6 ? base : `USER_${Math.random().toString(36).slice(2, 8).toUpperCase()}`;
-    localStorage.setItem('x-user-id', userId);
     try {
       setLoading(true);
       const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:3000';
-      // persist email
-      if (email.trim()) {
-        await fetch(`${baseUrl}/api/user/email`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', 'x-user-id': userId },
-          body: JSON.stringify({ email: email.trim() })
-        });
+      
+      // Login with session cookie
+      const res = await fetch(`${baseUrl}/api/auth/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ 
+          email: email.trim(),
+          inviteCode: inviteCode.trim() || undefined
+        })
+      });
+      
+      const data = await res.json();
+      if (!res.ok) throw new Error(data?.message || 'Failed to login');
+      
+      // Store userId in localStorage for backward compatibility
+      localStorage.setItem('x-user-id', data.userId);
+      
+      if (data.level) {
+        setSuccess(`✓ Registered (level ${data.level}) as ${data.userId}`);
       }
-      // optional register by invite
-      if (inviteCode.trim()) {
-        const res = await fetch(`${baseUrl}/api/referral/register`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', 'x-user-id': userId },
-          body: JSON.stringify({ code: inviteCode.trim() })
-        });
-        const body = await res.json();
-        if (!res.ok) throw new Error(body?.message || 'Failed to register');
-        setSuccess(`✓ Registered (level ${body.level}) as ${userId}`);
-      }
+      
       // show welcome modal
       setShowWelcome(true);
     } catch (e: any) {
@@ -87,7 +87,7 @@ export default function Home() {
       {/* Top utility bar */}
       <div className="px-4" style={{ maxWidth: 1120, margin: '0 auto' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingTop: 8 }}>
-          <div style={{ fontWeight: 700, color: '#6d28d9' }}>kraken</div>
+          <div style={{ fontWeight: 700, color: '#6d28d9' }}>Nika</div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
             <button className="btn" style={{ background: '#f2f2f5', color: 'var(--foreground)', padding: '0.5rem 0.9rem' }}>U.S. English</button>
             <button className="btn" style={{ background: '#f2f2f5', color: 'var(--foreground)', padding: '0.5rem 0.9rem' }}>Sign in</button>
@@ -95,7 +95,7 @@ export default function Home() {
         </div>
       </div>
 
-      {/* Centered narrow card like Kraken */}
+      {/* Centered narrow card like Nika */}
       <div className="mx-auto" style={{ maxWidth: 560 }}>
         <div className="px-4 pt-16 pb-6">
           <div className="card" style={{ padding: '28px 28px' }}>
@@ -144,9 +144,11 @@ export default function Home() {
           </div>
         </div>
 
-        {/* Minimal links row, aligned with Kraken footer spacing */}
+        {/* Minimal links row, aligned with footer spacing */}
         <div className="px-4 pb-16" style={{ display: 'flex', gap: 12, justifyContent: 'center' }}>
-          <Link href="/referral" className="form-subtle">Generate code</Link>
+          <Link href="/dashboard" className="form-subtle">Dashboard</Link>
+          <span className="form-subtle">•</span>
+          <button onClick={() => setShowGenerateModal(true)} className="form-subtle" style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer' }}>Generate code</button>
           <span className="form-subtle">•</span>
           <Link href="/referral/register" className="form-subtle">Register</Link>
           <span className="form-subtle">•</span>
@@ -158,7 +160,7 @@ export default function Home() {
 
     {/* Welcome Modal */}
     {showWelcome && (
-      <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }}>
+      <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16, zIndex: 1000 }}>
         <div className="card" style={{ width: 520, padding: 24 }}>
           <h2 className="form-title" style={{ marginBottom: 8 }}>Welcome to Nika Finance</h2>
           <p className="form-subtle" style={{ marginBottom: 16 }}>
@@ -172,15 +174,61 @@ export default function Home() {
                 <button className="btn" style={{ background: '#f2f2f5' }} onClick={() => { navigator.clipboard.writeText(refCode); }}>
                   Copy
                 </button>
-                <Link href="/referral" className="btn btn-primary" style={{ padding: '0.875rem 1.25rem' }}>View details</Link>
+                <Link href="/dashboard" className="btn btn-primary" style={{ padding: '0.875rem 1.25rem' }} onClick={() => setShowWelcome(false)}>
+                  Go to Dashboard
+                </Link>
               </div>
             </div>
           ) : (
             <div style={{ display: 'flex', gap: 12 }}>
-              <button className="btn" style={{ background: '#f2f2f5' }} onClick={() => setShowWelcome(false)}>Close</button>
+              <Link href="/dashboard" className="btn" style={{ background: '#f2f2f5', padding: '0.875rem 1.25rem', textDecoration: 'none' }} onClick={() => setShowWelcome(false)}>
+                Go to Dashboard
+              </Link>
               <button className="btn btn-primary" onClick={generateReferral} disabled={loading}>
                 {loading ? 'Generating…' : 'Generate code'}
               </button>
+            </div>
+          )}
+        </div>
+      </div>
+    )}
+
+    {/* Generate Code Modal */}
+    {showGenerateModal && (
+      <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16, zIndex: 1000 }} onClick={() => setShowGenerateModal(false)}>
+        <div className="card" style={{ width: 520, padding: 24 }} onClick={(e) => e.stopPropagation()}>
+          <h2 className="form-title" style={{ marginBottom: 8 }}>Generate Referral Code</h2>
+          <p className="form-subtle" style={{ marginBottom: 16 }}>
+            Share your referral code to earn up to 30%/3%/2% commission across three levels.
+          </p>
+          {refCode ? (
+            <div>
+              <label className="form-subtle" style={{ display: 'block', marginBottom: 6 }}>Your referral code</label>
+              <input className="input" value={refCode} readOnly />
+              <div style={{ marginTop: 12, display: 'flex', gap: 8 }}>
+                <button className="btn" style={{ background: '#f2f2f5', flex: 1 }} onClick={() => { navigator.clipboard.writeText(refCode); }}>
+                  Copy Code
+                </button>
+                <button className="btn btn-primary" style={{ flex: 1 }} onClick={() => setShowGenerateModal(false)}>
+                  Done
+                </button>
+              </div>
+            </div>
+          ) : (
+            <div>
+              {error && (
+                <div className="mt-3 p-3 rounded" style={{ background: '#fef2f2', border: '1px solid #fca5a5', marginBottom: 12 }}>
+                  <p className="text-sm" style={{ color: '#dc2626' }}>{error}</p>
+                </div>
+              )}
+              <div style={{ display: 'flex', gap: 12 }}>
+                <button className="btn" style={{ background: '#f2f2f5', flex: 1 }} onClick={() => setShowGenerateModal(false)}>
+                  Cancel
+                </button>
+                <button className="btn btn-primary" style={{ flex: 1 }} onClick={generateReferral} disabled={loading}>
+                  {loading ? 'Generating…' : 'Generate Code'}
+                </button>
+              </div>
             </div>
           )}
         </div>

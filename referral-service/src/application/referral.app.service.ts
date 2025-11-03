@@ -61,6 +61,45 @@ export class ReferralAppService {
   async getEarnings(userId: string): Promise<{ total: number; byLevel: Record<number, number> }> {
     return this.ledgerRepo.getEarningsSummary(userId);
   }
+
+  async getDashboard(userId: string): Promise<{
+    totalXP: number;
+    referrals: Array<{
+      userId: string;
+      level: number;
+      totalEarned: number;
+      tradeCount: number;
+      percentage: number;
+    }>;
+  }> {
+    const earnings = await this.ledgerRepo.getEarningsSummary(userId);
+    const refereeEarnings = await this.ledgerRepo.getRefereeEarnings(userId);
+
+    // Calculate percentage of total for each referee
+    const referrals = refereeEarnings.map(r => ({
+      userId: r.refereeId,
+      level: r.level,
+      totalEarned: r.totalEarned,
+      tradeCount: r.tradeCount,
+      percentage: earnings.total > 0 ? (r.totalEarned / earnings.total) * 100 : 0,
+    }));
+
+    return {
+      totalXP: earnings.total,
+      referrals,
+    };
+  }
+
+  async getActivity(userId: string, limit?: number): Promise<Array<{
+    tradeId: string;
+    userId: string;
+    feeAmount: number;
+    earnedAmount: number;
+    level: number;
+    createdAt: Date;
+  }>> {
+    return this.ledgerRepo.getRecentActivity(userId, limit);
+  }
 }
 
 

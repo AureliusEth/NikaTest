@@ -79,4 +79,18 @@ export function useMockTrades() {
 	};
 }
 
+export function useDashboard() {
+	const port = useReferralPort();
+	return {
+		load: () => port.getDashboard(),
+	};
+}
+
+export function useActivity() {
+	const port = useReferralPort();
+	return {
+		load: () => port.getActivity(),
+	};
+}
+
 
