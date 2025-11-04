@@ -58,13 +58,8 @@ export default function Home() {
       
       localStorage.setItem('x-user-id', data.userId);
       
-      // Check if account already exists (has referral code)
-      const hasAccountRes = await fetch(`${baseUrl}/api/referral/generate`, {
-        method: 'POST',
-        headers: { 'x-user-id': data.userId },
-      });
-      
-      const accountExists = hasAccountRes.ok;
+      // Backend tells us if user already exists via DB lookup
+      const accountExists = data.isExistingUser;
       
       if (!isSignIn && accountExists) {
         // User tried to sign up but account already exists

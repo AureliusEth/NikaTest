@@ -397,7 +397,9 @@ export default function DashboardPage() {
 							height: '48px', 
 							borderWidth: '4px',
 							borderStyle: 'solid',
-							borderColor: isDark ? '#a78bfa' : '#5b21b6',
+							borderTopColor: isDark ? '#a78bfa' : '#5b21b6',
+							borderLeftColor: isDark ? '#a78bfa' : '#5b21b6',
+							borderBottomColor: isDark ? '#a78bfa' : '#5b21b6',
 							borderRightColor: 'transparent',
 							borderRadius: '50%', 
 							animation: 'spin 1s linear infinite' 
