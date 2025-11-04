@@ -4,7 +4,7 @@ import { SvmBlockchainService } from '../services/svm-blockchain.service';
 
 /**
  * Blockchain Module
- * 
+ *
  * Manages blockchain connections and contract interactions for both EVM and SVM chains.
  * Initializes services on module startup based on environment configuration.
  */
@@ -23,7 +23,7 @@ export class BlockchainModule implements OnModuleInit {
     // Initialize EVM service
     const evmRpcUrl = process.env.EVM_RPC_URL;
     const evmPrivateKey = process.env.EVM_PRIVATE_KEY;
-    
+
     if (evmRpcUrl) {
       this.evmService.initialize(evmRpcUrl, evmPrivateKey);
     }
@@ -31,10 +31,10 @@ export class BlockchainModule implements OnModuleInit {
     // Initialize SVM service
     const svmRpcUrl = process.env.SVM_RPC_URL;
     const svmPrivateKey = process.env.SVM_PRIVATE_KEY;
-    
+
     if (svmRpcUrl) {
       try {
-      this.svmService.initialize(svmRpcUrl, svmPrivateKey);
+        this.svmService.initialize(svmRpcUrl, svmPrivateKey);
       } catch (error) {
         console.error('Failed to initialize SVM service:', error);
         // Continue without SVM - backend can still function for EVM-only operations
@@ -42,4 +42,3 @@ export class BlockchainModule implements OnModuleInit {
     }
   }
 }
-

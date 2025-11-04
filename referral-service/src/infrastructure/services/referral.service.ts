@@ -3,7 +3,7 @@ import type { ReferralService as IReferralService } from '../../domain/services/
 
 /**
  * ReferralService Implementation (Infrastructure Layer)
- * 
+ *
  * Implements the domain's ReferralService interface.
  * Validates referral business rules using the ReferralRepository.
  */
@@ -14,7 +14,10 @@ export class ReferralService implements IReferralService {
    * Determines if `refereeId` can link to `referrerId` and returns level (1..3).
    * Enforces: no self-referral, no cycles, overall depth ≤ 3.
    */
-  async computeLevelOrThrow(refereeId: string, referrerId: string): Promise<number> {
+  async computeLevelOrThrow(
+    refereeId: string,
+    referrerId: string,
+  ): Promise<number> {
     // Rule 1: No self-referral
     if (refereeId === referrerId) {
       throw new Error('Cannot self-refer');
@@ -26,7 +29,10 @@ export class ReferralService implements IReferralService {
     }
 
     // Rule 3: No cycles (referrer cannot be a descendant of referee)
-    const referrerAncestors = await this.referralRepo.getAncestors(referrerId, 10);
+    const referrerAncestors = await this.referralRepo.getAncestors(
+      referrerId,
+      10,
+    );
     if (referrerAncestors.includes(refereeId)) {
       throw new Error('Cycle detected');
     }
@@ -40,5 +46,3 @@ export class ReferralService implements IReferralService {
     return newLevel;
   }
 }
-
-

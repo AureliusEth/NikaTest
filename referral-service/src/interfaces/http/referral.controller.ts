@@ -45,5 +45,3 @@ export class ReferralController {
     return this.app.getHourlyEarnings(req.user.id, 24);
   }
 }
-
-

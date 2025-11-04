@@ -21,7 +21,7 @@ let PrismaLedgerRepository = class PrismaLedgerRepository {
         if (entries.length === 0)
             return;
         await this.prisma.commissionLedgerEntry.createMany({
-            data: entries.map(e => ({
+            data: entries.map((e) => ({
                 beneficiaryId: e.beneficiaryId,
                 sourceTradeId: e.sourceTradeId,
                 level: e.level,
@@ -42,7 +42,11 @@ let PrismaLedgerRepository = class PrismaLedgerRepository {
             if (range.to)
                 where.createdAt.lte = range.to;
         }
-        const rows = await this.prisma.commissionLedgerEntry.groupBy({ by: ['level'], _sum: { amount: true }, where });
+        const rows = await this.prisma.commissionLedgerEntry.groupBy({
+            by: ['level'],
+            _sum: { amount: true },
+            where,
+        });
         const byLevel = {};
         let total = 0;
         for (const r of rows) {
@@ -66,7 +70,7 @@ let PrismaLedgerRepository = class PrismaLedgerRepository {
       GROUP BY t."userId", l.level
       ORDER BY l.level ASC, SUM(l.amount) DESC
     `;
-        return results.map(r => ({
+        return results.map((r) => ({
             refereeId: r.userId,
             level: r.level,
             totalEarned: parseFloat(r.totalEarned),
@@ -79,13 +83,13 @@ let PrismaLedgerRepository = class PrismaLedgerRepository {
             orderBy: { createdAt: 'desc' },
             take: limit,
         });
-        const tradeIds = [...new Set(entries.map(e => e.sourceTradeId))];
+        const tradeIds = [...new Set(entries.map((e) => e.sourceTradeId))];
         const trades = await this.prisma.trade.findMany({
             where: { id: { in: tradeIds } },
         });
-        const tradeMap = new Map(trades.map(t => [t.id, t]));
+        const tradeMap = new Map(trades.map((t) => [t.id, t]));
         return entries
-            .map(e => {
+            .map((e) => {
             const trade = tradeMap.get(e.sourceTradeId);
             if (!trade)
                 return null;

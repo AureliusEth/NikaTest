@@ -1,12 +1,12 @@
 import { Split } from '../../domain/policies/commission-policy';
-import { 
-  FeeBundlingService as IFeeBundlingService, 
-  FeeBundle 
+import {
+  FeeBundlingService as IFeeBundlingService,
+  FeeBundle,
 } from '../../domain/services/fee-bundling.service';
 
 /**
  * Fee Bundling Service Implementation (Infrastructure Layer)
- * 
+ *
  * Implements the SQE fee bundling logic:
  * 1. Groups splits by destination (treasury vs claimable)
  * 2. Provides smart contract addresses for each chain
@@ -31,7 +31,7 @@ export class FeeBundlingService implements IFeeBundlingService {
 
     for (const split of splits) {
       const key = `${split.destination}:${split.token}`;
-      
+
       if (!bundles.has(key)) {
         bundles.set(key, {
           destination: split.destination,
@@ -39,9 +39,10 @@ export class FeeBundlingService implements IFeeBundlingService {
           token: split.token,
           totalAmount: 0,
           splits: [],
-          contractAddress: split.destination === 'claimable' 
-            ? this.getContractAddress(chain, split.token)
-            : undefined,
+          contractAddress:
+            split.destination === 'claimable'
+              ? this.getContractAddress(chain, split.token)
+              : undefined,
         });
       }
 
@@ -67,12 +68,12 @@ export class FeeBundlingService implements IFeeBundlingService {
    */
   generateBundleSummary(bundles: FeeBundle[]): string {
     const lines: string[] = ['Fee Bundle Summary:'];
-    
+
     for (const bundle of bundles) {
       lines.push(
-        `  [${bundle.destination.toUpperCase()}] ${bundle.chain} ${bundle.token}: ${bundle.totalAmount.toFixed(8)}`
+        `  [${bundle.destination.toUpperCase()}] ${bundle.chain} ${bundle.token}: ${bundle.totalAmount.toFixed(8)}`,
       );
-      
+
       if (bundle.destination === 'claimable') {
         lines.push(`    Contract: ${bundle.contractAddress}`);
         lines.push(`    Splits: ${bundle.splits.length} users`);
@@ -80,8 +81,7 @@ export class FeeBundlingService implements IFeeBundlingService {
         lines.push(`    Direct to Nika Treasury`);
       }
     }
-    
+
     return lines.join('\n');
   }
 }
-

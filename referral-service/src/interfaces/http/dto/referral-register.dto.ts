@@ -5,7 +5,3 @@ export class ReferralRegisterDto {
   @MinLength(3)
   code!: string;
 }
-
-
-
-

@@ -10,7 +10,8 @@ exports.AuthService = void 0;
 const common_1 = require("@nestjs/common");
 const jose_1 = require("jose");
 let AuthService = class AuthService {
-    secret = new TextEncoder().encode(process.env.JWT_SECRET || 'your-secret-key-change-in-production-min-32-chars');
+    secret = new TextEncoder().encode(process.env.JWT_SECRET ||
+        'your-secret-key-change-in-production-min-32-chars');
     async createSession(userId) {
         const token = await new jose_1.SignJWT({ userId })
             .setProtectedHeader({ alg: 'HS256' })

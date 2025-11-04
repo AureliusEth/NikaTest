@@ -23,16 +23,29 @@ let PrismaUserRepository = class PrismaUserRepository {
         const u = await this.prisma.user.findUnique({ where: { id: userId } });
         if (!u)
             return null;
-        return { id: u.id, email: u.email ?? undefined, feeCashbackRate: Number(u.feeCashbackRate) };
+        return {
+            id: u.id,
+            email: u.email ?? undefined,
+            feeCashbackRate: Number(u.feeCashbackRate),
+        };
     }
     async findByReferralCode(code) {
-        const u = await this.prisma.user.findUnique({ where: { referralCode: code } });
+        const u = await this.prisma.user.findUnique({
+            where: { referralCode: code },
+        });
         if (!u)
             return null;
-        return { id: u.id, email: u.email ?? undefined, feeCashbackRate: Number(u.feeCashbackRate) };
+        return {
+            id: u.id,
+            email: u.email ?? undefined,
+            feeCashbackRate: Number(u.feeCashbackRate),
+        };
     }
     async createOrGetReferralCode(userId) {
-        const existing = await this.prisma.user.findUnique({ where: { id: userId }, select: { referralCode: true } });
+        const existing = await this.prisma.user.findUnique({
+            where: { id: userId },
+            select: { referralCode: true },
+        });
         if (existing?.referralCode)
             return existing.referralCode;
         const code = `ref_${(0, crypto_1.randomBytes)(6).toString('base64url')}`;
@@ -45,7 +58,7 @@ let PrismaUserRepository = class PrismaUserRepository {
                 referralCode: code,
                 feeCashbackRate: constants_1.DEFAULT_CASHBACK_RATE,
             },
-            select: { referralCode: true }
+            select: { referralCode: true },
         });
         return updated.referralCode;
     }

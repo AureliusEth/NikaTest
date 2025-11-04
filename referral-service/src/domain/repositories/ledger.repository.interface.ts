@@ -1,6 +1,6 @@
 /**
  * Domain Repository Interface - Commission Ledger
- * 
+ *
  * This interface defines the contract for recording and querying commission earnings.
  * Implementations belong in the infrastructure layer.
  */
@@ -29,7 +29,6 @@ export interface LedgerRepository {
    */
   getEarningsSummary(
     userId: string,
-    range?: { from?: Date; to?: Date }
+    range?: { from?: Date; to?: Date },
   ): Promise<{ total: number; byLevel: Record<number, number> }>;
 }
-

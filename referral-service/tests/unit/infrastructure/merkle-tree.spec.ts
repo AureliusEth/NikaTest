@@ -23,7 +23,7 @@ describe('Merkle Tree Service', () => {
       // Assert: Leaf hash is deterministic keccak256 of formatted data
       const expectedLeafData = `user@example.com:XP:${balance.totalAmount.toFixed(8)}`;
       const expectedLeafHash = keccak256(Buffer.from(expectedLeafData));
-      
+
       expect(leaves.size).toBe(1);
       expect(leaves.has(balance.beneficiaryId)).toBe(true);
       expect(leaves.get(balance.beneficiaryId)).toBe(expectedLeafHash);
@@ -32,8 +32,8 @@ describe('Merkle Tree Service', () => {
     it('should format amount to 8 decimal places consistently', () => {
       // Arrange: Amounts with different decimal precision
       const balances = [
-        { beneficiaryId: 'user1', token: 'XP', totalAmount: 100 },      // Integer
-        { beneficiaryId: 'user2', token: 'XP', totalAmount: 100.5 },    // 1 decimal
+        { beneficiaryId: 'user1', token: 'XP', totalAmount: 100 }, // Integer
+        { beneficiaryId: 'user2', token: 'XP', totalAmount: 100.5 }, // 1 decimal
         { beneficiaryId: 'user3', token: 'XP', totalAmount: 100.123456789 }, // 9 decimals
       ];
 
@@ -41,31 +41,49 @@ describe('Merkle Tree Service', () => {
       const { leaves } = service.generateTree(balances, 'EVM');
 
       // Assert: All formatted to 8 decimals
-      expect(leaves.get('user1')).toBe(keccak256(Buffer.from('user1:XP:100.00000000')));
-      expect(leaves.get('user2')).toBe(keccak256(Buffer.from('user2:XP:100.50000000')));
-      expect(leaves.get('user3')).toBe(keccak256(Buffer.from('user3:XP:100.12345679'))); // Rounded
+      expect(leaves.get('user1')).toBe(
+        keccak256(Buffer.from('user1:XP:100.00000000')),
+      );
+      expect(leaves.get('user2')).toBe(
+        keccak256(Buffer.from('user2:XP:100.50000000')),
+      );
+      expect(leaves.get('user3')).toBe(
+        keccak256(Buffer.from('user3:XP:100.12345679')),
+      ); // Rounded
     });
 
     it('should use keccak256 not SHA256', () => {
       // Arrange: Test data
       const testString = 'test';
-      
+
       // Known hashes for verification:
       // keccak256("test") = 0x9c22ff5f21f0b81b113e63f7db6da94fedef11b2119b4088b89664fb9a3cb658
       // sha256("test")    = 0x9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08
-      
+
       const hash = keccak256(Buffer.from(testString));
-      
+
       // Assert: Must be keccak256 (starts with 0x9c22...)
-      expect(hash).toBe('0x9c22ff5f21f0b81b113e63f7db6da94fedef11b2119b4088b89664fb9a3cb658');
-      expect(hash).not.toBe('0x9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08');
+      expect(hash).toBe(
+        '0x9c22ff5f21f0b81b113e63f7db6da94fedef11b2119b4088b89664fb9a3cb658',
+      );
+      expect(hash).not.toBe(
+        '0x9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08',
+      );
     });
 
     it('should handle special characters in user IDs (emails)', () => {
       // Arrange: Email addresses with special chars
       const balances = [
-        { beneficiaryId: 'user+tag@example.com', token: 'XP', totalAmount: 100 },
-        { beneficiaryId: 'user.name@example.co.uk', token: 'XP', totalAmount: 200 },
+        {
+          beneficiaryId: 'user+tag@example.com',
+          token: 'XP',
+          totalAmount: 100,
+        },
+        {
+          beneficiaryId: 'user.name@example.co.uk',
+          token: 'XP',
+          totalAmount: 200,
+        },
       ];
 
       // Act
@@ -117,7 +135,9 @@ describe('Merkle Tree Service', () => {
 
       // Root should be keccak256(sortedHash1 + sortedHash2)
       const [sortedHash1, sortedHash2] = [hash1, hash2].sort();
-      const expectedRoot = keccak256(Buffer.from(sortedHash1.slice(2) + sortedHash2.slice(2), 'hex'));
+      const expectedRoot = keccak256(
+        Buffer.from(sortedHash1.slice(2) + sortedHash2.slice(2), 'hex'),
+      );
       expect(root).toBe(expectedRoot);
     });
 
@@ -136,7 +156,7 @@ describe('Merkle Tree Service', () => {
       // Assert: Tree structure is valid
       expect(leaves.size).toBe(4);
       expect(root).toMatch(/^0x[a-f0-9]{64}$/);
-      
+
       // All leaves should be unique
       const uniqueHashes = new Set(leaves.values());
       expect(uniqueHashes.size).toBe(4);
@@ -257,7 +277,11 @@ describe('Merkle Tree Service', () => {
     it('should include all metadata in proof', () => {
       // Arrange
       const balances = [
-        { beneficiaryId: 'user@example.com', token: 'USDC', totalAmount: 123.456789 },
+        {
+          beneficiaryId: 'user@example.com',
+          token: 'USDC',
+          totalAmount: 123.456789,
+        },
       ];
 
       // Act
@@ -318,7 +342,7 @@ describe('Merkle Tree Service', () => {
         { beneficiaryId: 'user1', token: 'XP', totalAmount: 200 }, // Different amount
         { beneficiaryId: 'user2', token: 'XP', totalAmount: 250 },
       ];
-      
+
       const proof1 = service.generateProof('user1', balances1);
       const { root: root2 } = service.generateTree(balances2, 'EVM');
 
@@ -408,4 +432,3 @@ describe('Merkle Tree Service', () => {
     });
   });
 });
-

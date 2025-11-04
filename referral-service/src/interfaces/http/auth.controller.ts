@@ -28,7 +28,10 @@ export class AuthController {
   ) {
     // Create user ID from email
     const base = (body.email || '').trim().toUpperCase();
-    const userId = base.length >= 6 ? base : `USER_${Math.random().toString(36).slice(2, 8).toUpperCase()}`;
+    const userId =
+      base.length >= 6
+        ? base
+        : `USER_${Math.random().toString(36).slice(2, 8).toUpperCase()}`;
 
     // Save email
     await this.referralApp.setUserEmail(userId, body.email);
@@ -37,7 +40,10 @@ export class AuthController {
     let level: number | undefined;
     if (body.inviteCode?.trim()) {
       try {
-        level = await this.referralApp.registerReferralByCode(userId, body.inviteCode.trim());
+        level = await this.referralApp.registerReferralByCode(
+          userId,
+          body.inviteCode.trim(),
+        );
       } catch (e) {
         // Ignore if already registered
       }
@@ -54,10 +60,10 @@ export class AuthController {
       maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
     });
 
-    return { 
+    return {
       userId,
       level,
-      message: 'Logged in successfully' 
+      message: 'Logged in successfully',
     };
   }
 
@@ -80,4 +86,3 @@ export class AuthController {
     return { userId: session?.userId || null };
   }
 }
-

@@ -2,7 +2,7 @@ import { CommissionContext, Split } from '../policies/commission-policy';
 
 /**
  * Commission Service Interface (Domain Layer)
- * 
+ *
  * Defines the contract for computing commission splits.
  * Implementations live in the infrastructure layer.
  */
@@ -16,7 +16,3 @@ export interface CommissionService {
    */
   computeSplits(tradeFee: number, ctx: CommissionContext): Split[];
 }
-
-
-
-

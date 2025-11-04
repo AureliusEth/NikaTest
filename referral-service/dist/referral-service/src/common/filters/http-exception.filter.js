@@ -16,7 +16,9 @@ let HttpExceptionFilter = class HttpExceptionFilter {
         if (exception instanceof common_1.HttpException) {
             const status = exception.getStatus();
             const response = exception.getResponse();
-            const message = typeof response === 'string' ? response : response?.message || exception.message;
+            const message = typeof response === 'string'
+                ? response
+                : response?.message || exception.message;
             res.status(status).json({ code: 'HTTP_ERROR', message, path: req.url });
             return;
         }

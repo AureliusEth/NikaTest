@@ -37,14 +37,6 @@
     "test:e2e": "jest tests/e2e --runInBand",
     "test:all": "npm run test:unit && npm run test:integration",
     "test:all:verbose": "npm run test:unit && npm run test:integration && npm run test:e2e",
-    "test:e2e-full": "ts-node scripts/test-e2e.ts",
-    "test:e2e-live": "ts-node scripts/test-e2e-live-contracts.ts",
-    "test:e2e-phase1-referrals": "ts-node scripts/test-e2e-phase1-referrals.ts",
-    "test:e2e-phase1-commissions": "ts-node scripts/test-e2e-phase1-commissions.ts",
-    "test:e2e-phase1-merkle-claims": "ts-node scripts/test-e2e-phase1-merkle-claims.ts",
-    "test:e2e-phase2-contracts": "ts-node scripts/test-e2e-phase2-contracts.ts",
-    "test:e2e-phase3-edge-cases": "ts-node scripts/test-e2e-phase3-edge-cases.ts",
-    "test:e2e-all-phases": "npm run test:e2e-phase1-referrals && npm run test:e2e-phase1-commissions && npm run test:e2e-phase1-merkle-claims && npm run test:e2e-phase2-contracts && npm run test:e2e-phase3-edge-cases",
     "prisma:generate": "prisma generate && node scripts/post-prisma-generate.js",
     "mock-trade-flow": "ts-node scripts/mock-trade-flow.ts",
     "mock-comprehensive": "ts-node scripts/mock-comprehensive-trades.ts",
@@ -104,8 +96,12 @@
       "ts"
     ],
     "roots": [
-      "<rootDir>/src",
       "<rootDir>/tests"
+    ],
+    "testPathIgnorePatterns": [
+      "/node_modules/",
+      "/dist/",
+      "/test/"
     ],
     "testRegex": ".*\\.spec\\.ts$",
     "transform": {

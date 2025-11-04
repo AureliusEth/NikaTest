@@ -20,7 +20,11 @@ export interface ReferralRepository {
   getAncestors(userId: string, maxLevels: number): Promise<string[]>;
   /** Whether the user already has a referrer link */
   hasReferrer(userId: string): Promise<boolean>;
-  createLink(referrerId: string, refereeId: string, level: number): Promise<void>;
+  createLink(
+    referrerId: string,
+    refereeId: string,
+    level: number,
+  ): Promise<void>;
   /** Direct referrals of a given user */
   getDirectReferees(userId: string): Promise<string[]>;
 }
@@ -55,7 +59,7 @@ export interface LedgerRepository {
   recordEntries(entries: LedgerEntryDTO[]): Promise<void>;
   getEarningsSummary(
     userId: string,
-    range?: { from?: Date; to?: Date }
+    range?: { from?: Date; to?: Date },
   ): Promise<{ total: number; byLevel: Record<number, number> }>;
   getRefereeEarnings(userId: string): Promise<RefereeEarnings[]>;
   getRecentActivity(userId: string, limit?: number): Promise<TradeActivity[]>;
@@ -68,11 +72,9 @@ export interface IdempotencyStore {
 
 export interface TradesRepository {
   createTrade(
-    tradeId: string, 
-    userId: string, 
-    feeAmount: number, 
-    chain?: 'EVM' | 'SVM'
+    tradeId: string,
+    userId: string,
+    feeAmount: number,
+    chain?: 'EVM' | 'SVM',
   ): Promise<void>;
 }
-
-

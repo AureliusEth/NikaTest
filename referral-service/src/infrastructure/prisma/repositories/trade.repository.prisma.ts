@@ -7,14 +7,13 @@ export class PrismaTradesRepository implements TradesRepository {
   constructor(private readonly prisma: PrismaService) {}
 
   async createTrade(
-    tradeId: string, 
-    userId: string, 
-    feeAmount: number, 
-    chain: 'EVM' | 'SVM' = 'EVM'
+    tradeId: string,
+    userId: string,
+    feeAmount: number,
+    chain: 'EVM' | 'SVM' = 'EVM',
   ): Promise<void> {
-    await this.prisma.trade.create({ data: { id: tradeId, userId, feeAmount, chain } });
+    await this.prisma.trade.create({
+      data: { id: tradeId, userId, feeAmount, chain },
+    });
   }
 }
-
-
-

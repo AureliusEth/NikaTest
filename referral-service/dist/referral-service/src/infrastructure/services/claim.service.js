@@ -64,14 +64,15 @@ let ClaimService = ClaimService_1 = class ClaimService {
         }
         const amount_str = proof.amount.toFixed(8);
         const contractAddress = this.getContractAddress(chain, token);
-        var verified = false;
+        let verified = false;
         try {
             this.logger.log(`Verifying proof on ${chain} contract: ${contractAddress}`);
             if (chain === 'EVM') {
                 const onChainRoot = await this.evmService.getMerkleRoot(contractAddress);
                 const dbRoot = rootData.root;
                 this.logger.log(`EVM Merkle root - On-chain: ${onChainRoot}, Database: ${dbRoot}`);
-                if (onChainRoot === '0x0000000000000000000000000000000000000000000000000000000000000000') {
+                if (onChainRoot ===
+                    '0x0000000000000000000000000000000000000000000000000000000000000000') {
                     this.logger.warn('Merkle root on EVM contract is zero - proof verification will fail. Update merkle root first.');
                     return {
                         success: false,
@@ -87,7 +88,8 @@ let ClaimService = ClaimService_1 = class ClaimService {
                 const onChainRoot = await this.svmService.getMerkleRoot(contractAddress);
                 const dbRoot = rootData.root;
                 this.logger.log(`SVM Merkle root - On-chain: ${onChainRoot}, Database: ${dbRoot}`);
-                if (onChainRoot === '0x0000000000000000000000000000000000000000000000000000000000000000') {
+                if (onChainRoot ===
+                    '0x0000000000000000000000000000000000000000000000000000000000000000') {
                     this.logger.warn('Merkle root on SVM contract is zero - proof verification will fail. Update merkle root first.');
                     return {
                         success: false,
@@ -222,7 +224,8 @@ let ClaimService = ClaimService_1 = class ClaimService {
     }
     getContractAddress(chain, token) {
         if (chain === 'SVM') {
-            const stateAddressEnv = process.env.SVM_STATE_ACCOUNT_ADDRESS || process.env.SVM_STATE_PDA_ADDRESS;
+            const stateAddressEnv = process.env.SVM_STATE_ACCOUNT_ADDRESS ||
+                process.env.SVM_STATE_PDA_ADDRESS;
             if (stateAddressEnv) {
                 this.logger.log(`Using SVM state account from env: ${stateAddressEnv}`);
                 return stateAddressEnv;
@@ -257,7 +260,10 @@ let ClaimService = ClaimService_1 = class ClaimService {
     }
     getTreasuryAddress(chain) {
         const envKey = `${chain}_TREASURY_ADDRESS`;
-        return process.env[envKey] || (chain === 'EVM' ? '0x0000000000000000000000000000000000000000' : '11111111111111111111111111111111');
+        return (process.env[envKey] ||
+            (chain === 'EVM'
+                ? '0x0000000000000000000000000000000000000000'
+                : '11111111111111111111111111111111'));
     }
 };
 exports.ClaimService = ClaimService;

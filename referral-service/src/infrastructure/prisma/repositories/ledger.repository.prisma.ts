@@ -1,5 +1,10 @@
 import { Injectable } from '@nestjs/common';
-import type { LedgerEntryDTO, LedgerRepository, RefereeEarnings, TradeActivity } from '../../../application/ports/repositories';
+import type {
+  LedgerEntryDTO,
+  LedgerRepository,
+  RefereeEarnings,
+  TradeActivity,
+} from '../../../application/ports/repositories';
 import { PrismaService } from '../services/prisma.service';
 
 @Injectable()
@@ -9,7 +14,7 @@ export class PrismaLedgerRepository implements LedgerRepository {
   async recordEntries(entries: LedgerEntryDTO[]): Promise<void> {
     if (entries.length === 0) return;
     await this.prisma.commissionLedgerEntry.createMany({
-      data: entries.map(e => ({
+      data: entries.map((e) => ({
         beneficiaryId: e.beneficiaryId,
         sourceTradeId: e.sourceTradeId,
         level: e.level,
@@ -22,14 +27,21 @@ export class PrismaLedgerRepository implements LedgerRepository {
     });
   }
 
-  async getEarningsSummary(userId: string, range?: { from?: Date; to?: Date }): Promise<{ total: number; byLevel: Record<number, number> }> {
+  async getEarningsSummary(
+    userId: string,
+    range?: { from?: Date; to?: Date },
+  ): Promise<{ total: number; byLevel: Record<number, number> }> {
     const where: any = { beneficiaryId: userId };
     if (range?.from || range?.to) {
       where.createdAt = {};
       if (range.from) where.createdAt.gte = range.from;
       if (range.to) where.createdAt.lte = range.to;
     }
-    const rows = await this.prisma.commissionLedgerEntry.groupBy({ by: ['level'], _sum: { amount: true }, where });
+    const rows = await this.prisma.commissionLedgerEntry.groupBy({
+      by: ['level'],
+      _sum: { amount: true },
+      where,
+    });
     const byLevel: Record<number, number> = {} as any;
     let total = 0;
     for (const r of rows) {
@@ -43,7 +55,14 @@ export class PrismaLedgerRepository implements LedgerRepository {
   async getRefereeEarnings(userId: string): Promise<RefereeEarnings[]> {
     // Get earnings grouped by referee (sourceTradeId -> userId from Trade)
     // We need to join ledger entries with trades to get the trader's info
-    const results = await this.prisma.$queryRaw<Array<{ userId: string; level: number; totalEarned: string; tradeCount: string }>>`
+    const results = await this.prisma.$queryRaw<
+      Array<{
+        userId: string;
+        level: number;
+        totalEarned: string;
+        tradeCount: string;
+      }>
+    >`
       SELECT 
         t."userId",
         l.level,
@@ -57,7 +76,7 @@ export class PrismaLedgerRepository implements LedgerRepository {
       ORDER BY l.level ASC, SUM(l.amount) DESC
     `;
 
-    return results.map(r => ({
+    return results.map((r) => ({
       refereeId: r.userId,
       level: r.level,
       totalEarned: parseFloat(r.totalEarned),
@@ -65,7 +84,10 @@ export class PrismaLedgerRepository implements LedgerRepository {
     }));
   }
 
-  async getRecentActivity(userId: string, limit: number = 50): Promise<TradeActivity[]> {
+  async getRecentActivity(
+    userId: string,
+    limit: number = 50,
+  ): Promise<TradeActivity[]> {
     const entries = await this.prisma.commissionLedgerEntry.findMany({
       where: { beneficiaryId: userId },
       orderBy: { createdAt: 'desc' },
@@ -73,15 +95,15 @@ export class PrismaLedgerRepository implements LedgerRepository {
     });
 
     // Get trade details for each entry
-    const tradeIds = [...new Set(entries.map(e => e.sourceTradeId))];
+    const tradeIds = [...new Set(entries.map((e) => e.sourceTradeId))];
     const trades = await this.prisma.trade.findMany({
       where: { id: { in: tradeIds } },
     });
 
-    const tradeMap = new Map(trades.map(t => [t.id, t]));
+    const tradeMap = new Map(trades.map((t) => [t.id, t]));
 
     return entries
-      .map(e => {
+      .map((e) => {
         const trade = tradeMap.get(e.sourceTradeId);
         if (!trade) return null;
         return {
@@ -96,5 +118,3 @@ export class PrismaLedgerRepository implements LedgerRepository {
       .filter((a): a is TradeActivity => a !== null);
   }
 }
-
-

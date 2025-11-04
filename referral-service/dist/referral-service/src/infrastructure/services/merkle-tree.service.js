@@ -39,7 +39,7 @@ let MerkleTreeService = class MerkleTreeService {
             };
         }
         const sortedBalances = [...balances].sort((a, b) => a.beneficiaryId.localeCompare(b.beneficiaryId));
-        const leaves = sortedBalances.map(balance => this.createLeaf(balance));
+        const leaves = sortedBalances.map((balance) => this.createLeaf(balance));
         const tree = new merkletreejs_1.default(leaves, this.hashFn, { sortPairs: true });
         const root = tree.getRoot();
         const leafMap = new Map();
@@ -52,14 +52,14 @@ let MerkleTreeService = class MerkleTreeService {
         };
     }
     generateProof(beneficiaryId, balances) {
-        const userBalance = balances.find(b => b.beneficiaryId === beneficiaryId);
+        const userBalance = balances.find((b) => b.beneficiaryId === beneficiaryId);
         if (!userBalance) {
             return null;
         }
         const sortedBalances = [...balances].sort((a, b) => a.beneficiaryId.localeCompare(b.beneficiaryId));
-        const leaves = sortedBalances.map(balance => this.createLeaf(balance));
+        const leaves = sortedBalances.map((balance) => this.createLeaf(balance));
         const tree = new merkletreejs_1.default(leaves, this.hashFn, { sortPairs: true });
-        const userIndex = sortedBalances.findIndex(b => b.beneficiaryId === beneficiaryId);
+        const userIndex = sortedBalances.findIndex((b) => b.beneficiaryId === beneficiaryId);
         if (userIndex === -1) {
             return null;
         }
@@ -69,15 +69,17 @@ let MerkleTreeService = class MerkleTreeService {
             beneficiaryId: userBalance.beneficiaryId,
             token: userBalance.token,
             amount: userBalance.totalAmount,
-            proof: proof.map(p => '0x' + p.data.toString('hex')),
+            proof: proof.map((p) => '0x' + p.data.toString('hex')),
             leaf: '0x' + userLeaf.toString('hex'),
         };
     }
     verifyProof(proof, root) {
         const leaf = Buffer.from(proof.leaf.slice(2), 'hex');
-        const proofBuffers = proof.proof.map(p => Buffer.from(p.slice(2), 'hex'));
+        const proofBuffers = proof.proof.map((p) => Buffer.from(p.slice(2), 'hex'));
         const rootBuffer = Buffer.from(root.slice(2), 'hex');
-        return merkletreejs_1.default.verify(proofBuffers, leaf, rootBuffer, this.hashFn, { sortPairs: true });
+        return merkletreejs_1.default.verify(proofBuffers, leaf, rootBuffer, this.hashFn, {
+            sortPairs: true,
+        });
     }
     async storeMerkleRoot(rootData) {
         await this.prisma.merkleRoot.create({

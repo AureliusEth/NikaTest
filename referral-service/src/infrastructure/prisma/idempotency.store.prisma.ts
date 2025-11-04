@@ -7,7 +7,10 @@ export class PrismaIdempotencyStore implements IdempotencyStore {
   constructor(private readonly prisma: PrismaService) {}
 
   async exists(key: string): Promise<boolean> {
-    const found = await this.prisma.idempotencyKey.findUnique({ where: { key }, select: { key: true } });
+    const found = await this.prisma.idempotencyKey.findUnique({
+      where: { key },
+      select: { key: true },
+    });
     return !!found;
   }
 
@@ -15,7 +18,3 @@ export class PrismaIdempotencyStore implements IdempotencyStore {
     await this.prisma.idempotencyKey.create({ data: { key } });
   }
 }
-
-
-
-

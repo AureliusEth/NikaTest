@@ -13,13 +13,15 @@ exports.CHAIN_CONSTANTS = {
             address: getContractAddress('EVM_XP_CONTRACT_ADDRESS', '0x3C4BB209c7f8E77C425247C9507Ace7F3685624C', '0x0000000000000000000000000000000000000000'),
             network: 'arbitrum-sepolia',
             chainId: 421614,
-            rpcUrl: process.env.EVM_RPC_URL || 'https://arbitrum-sepolia.infura.io/v3/5ce3f0a2d7814e3c9da96f8e8ebf4d0c',
+            rpcUrl: process.env.EVM_RPC_URL ||
+                'https://arbitrum-sepolia.infura.io/v3/5ce3f0a2d7814e3c9da96f8e8ebf4d0c',
         },
         USDC: {
             address: getContractAddress('EVM_USDC_CONTRACT_ADDRESS', '0x0000000000000000000000000000000000000000', '0x0000000000000000000000000000000000000000'),
             network: 'arbitrum-sepolia',
             chainId: 421614,
-            rpcUrl: process.env.EVM_RPC_URL || 'https://arbitrum-sepolia.infura.io/v3/5ce3f0a2d7814e3c9da96f8e8ebf4d0c',
+            rpcUrl: process.env.EVM_RPC_URL ||
+                'https://arbitrum-sepolia.infura.io/v3/5ce3f0a2d7814e3c9da96f8e8ebf4d0c',
         },
     },
     SVM: {

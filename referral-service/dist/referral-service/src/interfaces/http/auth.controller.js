@@ -39,7 +39,9 @@ let AuthController = class AuthController {
     }
     async login(body, res) {
         const base = (body.email || '').trim().toUpperCase();
-        const userId = base.length >= 6 ? base : `USER_${Math.random().toString(36).slice(2, 8).toUpperCase()}`;
+        const userId = base.length >= 6
+            ? base
+            : `USER_${Math.random().toString(36).slice(2, 8).toUpperCase()}`;
         await this.referralApp.setUserEmail(userId, body.email);
         let level;
         if (body.inviteCode?.trim()) {
@@ -59,7 +61,7 @@ let AuthController = class AuthController {
         return {
             userId,
             level,
-            message: 'Logged in successfully'
+            message: 'Logged in successfully',
         };
     }
     async logout(res) {

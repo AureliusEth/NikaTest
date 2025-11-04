@@ -1,4 +1,9 @@
-import { CallHandler, ExecutionContext, Injectable, NestInterceptor } from '@nestjs/common';
+import {
+  CallHandler,
+  ExecutionContext,
+  Injectable,
+  NestInterceptor,
+} from '@nestjs/common';
 import { Observable, tap } from 'rxjs';
 
 @Injectable()
@@ -11,13 +16,9 @@ export class LoggingInterceptor implements NestInterceptor {
         const ms = Date.now() - start;
         const method = req.method;
         const url = req.url;
-        // eslint-disable-next-line no-console
+
         console.log(`${method} ${url} ${ms}ms`);
-      })
+      }),
     );
   }
 }
-
-
-
-

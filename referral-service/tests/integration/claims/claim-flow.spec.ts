@@ -7,11 +7,16 @@ import { SvmBlockchainService } from '../../../src/infrastructure/services/svm-b
 import { TradesAppService } from '../../../src/application/trades.app.service';
 import { ReferralAppService } from '../../../src/application/referral.app.service';
 import { PrismaModule } from '../../../src/infrastructure/prisma/prisma.module';
-import { CommissionLedgerEntry, ClaimRecord, Trade, User } from '@prisma/client';
+import {
+  CommissionLedgerEntry,
+  ClaimRecord,
+  Trade,
+  User,
+} from '@prisma/client';
 
 /**
  * Unit Tests for XP Claim Flow
- * 
+ *
  * Tests cover:
  * 1. Double-spend prevention (critical bug we caught)
  * 2. XP tracking: earned, claimed, unclaimed
@@ -69,65 +74,89 @@ describe('XP Claim Flow (Unit Tests)', () => {
     // Make getMerkleRoot fetch the latest root dynamically each time it's called
     const evmService = module.get(EvmBlockchainService);
     const svmService = module.get(SvmBlockchainService);
-    
+
     // Store reference to merkleService for use in mocks
     const merkleServiceRef = merkleService;
-    
+
     // Override getMerkleRoot to fetch latest root from database
     // The mock receives contractAddress but we need to return the root for the chain/token
     // Since we're testing with specific chain/token combinations, fetch the appropriate root
-    evmService.getMerkleRoot = jest.fn().mockImplementation(async (contractAddress?: string) => {
-      // Always fetch fresh root from database
-      try {
-        const rootData = await merkleServiceRef.getLatestRoot('EVM', 'XP');
-        if (rootData?.root) {
-          return rootData.root;
+    evmService.getMerkleRoot = jest
+      .fn()
+      .mockImplementation(async (contractAddress?: string) => {
+        // Always fetch fresh root from database
+        try {
+          const rootData = await merkleServiceRef.getLatestRoot('EVM', 'XP');
+          if (rootData?.root) {
+            return rootData.root;
+          }
+        } catch (e) {
+          // If no root exists yet, return a non-zero value to pass zero-check
         }
-      } catch (e) {
-        // If no root exists yet, return a non-zero value to pass zero-check
-      }
-      // Return a non-zero root to pass the zero-check
-      return '0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef';
-    });
-    
-    svmService.getMerkleRoot = jest.fn().mockImplementation(async (contractAddress?: string) => {
-      // Always fetch fresh root from database
-      try {
-        const rootData = await merkleServiceRef.getLatestRoot('SVM', 'XP');
-        if (rootData?.root) {
-          return rootData.root;
+        // Return a non-zero root to pass the zero-check
+        return '0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef';
+      });
+
+    svmService.getMerkleRoot = jest
+      .fn()
+      .mockImplementation(async (contractAddress?: string) => {
+        // Always fetch fresh root from database
+        try {
+          const rootData = await merkleServiceRef.getLatestRoot('SVM', 'XP');
+          if (rootData?.root) {
+            return rootData.root;
+          }
+        } catch (e) {
+          // If no root exists yet, return a non-zero value to pass zero-check
         }
-      } catch (e) {
-        // If no root exists yet, return a non-zero value to pass zero-check
-      }
-      // Return a non-zero root to pass the zero-check
-      return '0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef';
-    });
+        // Return a non-zero root to pass the zero-check
+        return '0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef';
+      });
 
     // Clean up test data
-    await prisma.claimRecord.deleteMany({ where: { userId: { in: [USER_A, USER_B] } } });
-    await prisma.commissionLedgerEntry.deleteMany({ where: { beneficiaryId: { in: [USER_A, USER_B] } } });
-    await prisma.trade.deleteMany({ where: { userId: { in: [USER_A, USER_B] } } });
-    await prisma.referralLink.deleteMany({ where: { OR: [{ referrerId: USER_A }, { refereeId: USER_B }] } });
+    await prisma.claimRecord.deleteMany({
+      where: { userId: { in: [USER_A, USER_B] } },
+    });
+    await prisma.commissionLedgerEntry.deleteMany({
+      where: { beneficiaryId: { in: [USER_A, USER_B] } },
+    });
+    await prisma.trade.deleteMany({
+      where: { userId: { in: [USER_A, USER_B] } },
+    });
+    await prisma.referralLink.deleteMany({
+      where: { OR: [{ referrerId: USER_A }, { refereeId: USER_B }] },
+    });
     await prisma.user.deleteMany({ where: { id: { in: [USER_A, USER_B] } } });
   });
 
   afterEach(async () => {
     // Clean up
-    await prisma.claimRecord.deleteMany({ where: { userId: { in: [USER_A, USER_B] } } });
-    await prisma.commissionLedgerEntry.deleteMany({ where: { beneficiaryId: { in: [USER_A, USER_B] } } });
-    await prisma.trade.deleteMany({ where: { userId: { in: [USER_A, USER_B] } } });
-    await prisma.referralLink.deleteMany({ where: { OR: [{ referrerId: USER_A }, { refereeId: USER_B }] } });
+    await prisma.claimRecord.deleteMany({
+      where: { userId: { in: [USER_A, USER_B] } },
+    });
+    await prisma.commissionLedgerEntry.deleteMany({
+      where: { beneficiaryId: { in: [USER_A, USER_B] } },
+    });
+    await prisma.trade.deleteMany({
+      where: { userId: { in: [USER_A, USER_B] } },
+    });
+    await prisma.referralLink.deleteMany({
+      where: { OR: [{ referrerId: USER_A }, { refereeId: USER_B }] },
+    });
     await prisma.user.deleteMany({ where: { id: { in: [USER_A, USER_B] } } });
     // Clean up merkle roots for test users to ensure clean state
-    await prisma.merkleRoot.deleteMany({ where: { chain: { in: ['EVM', 'SVM'] }, token: 'XP' } });
+    await prisma.merkleRoot.deleteMany({
+      where: { chain: { in: ['EVM', 'SVM'] }, token: 'XP' },
+    });
     await module.close();
   });
 
   describe('Double-Spend Prevention', () => {
     it('should prevent claiming more XP than earned', async () => {
       // Setup: User A has 100 XP earned
-      await prisma.user.create({ data: { id: USER_A, email: `${USER_A}@test.com` } });
+      await prisma.user.create({
+        data: { id: USER_A, email: `${USER_A}@test.com` },
+      });
       await prisma.trade.create({
         data: { id: 'TRADE_1', userId: USER_A, feeAmount: 100, chain: 'EVM' },
       });
@@ -173,7 +202,9 @@ describe('XP Claim Flow (Unit Tests)', () => {
 
     it('should correctly track unclaimed XP after partial claims', async () => {
       // Setup: User A earns 100 XP, then claims, then earns 50 more
-      await prisma.user.create({ data: { id: USER_A, email: `${USER_A}@test.com` } });
+      await prisma.user.create({
+        data: { id: USER_A, email: `${USER_A}@test.com` },
+      });
 
       // First trade: 100 XP
       await prisma.trade.create({
@@ -237,7 +268,9 @@ describe('XP Claim Flow (Unit Tests)', () => {
 
   describe('Multi-Chain XP Tracking', () => {
     it('should track EVM and SVM XP separately', async () => {
-      await prisma.user.create({ data: { id: USER_A, email: `${USER_A}@test.com` } });
+      await prisma.user.create({
+        data: { id: USER_A, email: `${USER_A}@test.com` },
+      });
 
       // EVM trade: 100 XP
       await prisma.trade.create({
@@ -301,11 +334,18 @@ describe('XP Claim Flow (Unit Tests)', () => {
     });
 
     it('should allow claiming from same chain multiple times as XP accumulates', async () => {
-      await prisma.user.create({ data: { id: USER_A, email: `${USER_A}@test.com` } });
+      await prisma.user.create({
+        data: { id: USER_A, email: `${USER_A}@test.com` },
+      });
 
       // First EVM trade
       await prisma.trade.create({
-        data: { id: 'TRADE_EVM_1', userId: USER_A, feeAmount: 100, chain: 'EVM' },
+        data: {
+          id: 'TRADE_EVM_1',
+          userId: USER_A,
+          feeAmount: 100,
+          chain: 'EVM',
+        },
       });
       await prisma.commissionLedgerEntry.create({
         data: {
@@ -329,7 +369,12 @@ describe('XP Claim Flow (Unit Tests)', () => {
 
       // Second EVM trade (user continues trading)
       await prisma.trade.create({
-        data: { id: 'TRADE_EVM_2', userId: USER_A, feeAmount: 75, chain: 'EVM' },
+        data: {
+          id: 'TRADE_EVM_2',
+          userId: USER_A,
+          feeAmount: 75,
+          chain: 'EVM',
+        },
       });
       await prisma.commissionLedgerEntry.create({
         data: {
@@ -365,8 +410,16 @@ describe('XP Claim Flow (Unit Tests)', () => {
   describe('Trade Generation and XP Accumulation', () => {
     it('should correctly accumulate XP from referral trades', async () => {
       // Setup: User A refers User B
-      await prisma.user.create({ data: { id: USER_A, email: `${USER_A}@test.com`, referralCode: 'REF_A' } });
-      await prisma.user.create({ data: { id: USER_B, email: `${USER_B}@test.com` } });
+      await prisma.user.create({
+        data: {
+          id: USER_A,
+          email: `${USER_A}@test.com`,
+          referralCode: 'REF_A',
+        },
+      });
+      await prisma.user.create({
+        data: { id: USER_B, email: `${USER_B}@test.com` },
+      });
       await prisma.referralLink.create({
         data: { referrerId: USER_A, refereeId: USER_B, level: 1 },
       });
@@ -382,7 +435,7 @@ describe('XP Claim Flow (Unit Tests)', () => {
           beneficiaryId: USER_A,
           sourceTradeId: 'TRADE_B_1',
           level: 1,
-          rate: 0.30,
+          rate: 0.3,
           amount: 30,
           token: 'XP',
           destination: 'claimable',
@@ -403,7 +456,7 @@ describe('XP Claim Flow (Unit Tests)', () => {
           beneficiaryId: USER_A,
           sourceTradeId: 'TRADE_B_2',
           level: 1,
-          rate: 0.30,
+          rate: 0.3,
           amount: 60,
           token: 'XP',
           destination: 'claimable',
@@ -417,8 +470,16 @@ describe('XP Claim Flow (Unit Tests)', () => {
     });
 
     it('should continue accumulating XP after partial claims', async () => {
-      await prisma.user.create({ data: { id: USER_A, email: `${USER_A}@test.com`, referralCode: 'REF_A' } });
-      await prisma.user.create({ data: { id: USER_B, email: `${USER_B}@test.com` } });
+      await prisma.user.create({
+        data: {
+          id: USER_A,
+          email: `${USER_A}@test.com`,
+          referralCode: 'REF_A',
+        },
+      });
+      await prisma.user.create({
+        data: { id: USER_B, email: `${USER_B}@test.com` },
+      });
       await prisma.referralLink.create({
         data: { referrerId: USER_A, refereeId: USER_B, level: 1 },
       });
@@ -432,7 +493,7 @@ describe('XP Claim Flow (Unit Tests)', () => {
           beneficiaryId: USER_A,
           sourceTradeId: 'TRADE_1',
           level: 1,
-          rate: 0.30,
+          rate: 0.3,
           amount: 30,
           token: 'XP',
           destination: 'claimable',
@@ -457,7 +518,7 @@ describe('XP Claim Flow (Unit Tests)', () => {
           beneficiaryId: USER_A,
           sourceTradeId: 'TRADE_2',
           level: 1,
-          rate: 0.30,
+          rate: 0.3,
           amount: 60,
           token: 'XP',
           destination: 'claimable',
@@ -477,7 +538,9 @@ describe('XP Claim Flow (Unit Tests)', () => {
 
   describe('Merkle Root and Claim Lifecycle', () => {
     it('should prevent claiming same merkle version twice', async () => {
-      await prisma.user.create({ data: { id: USER_A, email: `${USER_A}@test.com` } });
+      await prisma.user.create({
+        data: { id: USER_A, email: `${USER_A}@test.com` },
+      });
       await prisma.trade.create({
         data: { id: 'TRADE_1', userId: USER_A, feeAmount: 100, chain: 'EVM' },
       });
@@ -503,12 +566,16 @@ describe('XP Claim Flow (Unit Tests)', () => {
       // Second claim attempt for same version should fail
       const claim2 = await claimService.claim(USER_A, 'EVM', 'XP');
       expect(claim2.success).toBe(false);
-      expect(claim2.error).toContain(`Already claimed for merkle root version ${root1.version}`);
+      expect(claim2.error).toContain(
+        `Already claimed for merkle root version ${root1.version}`,
+      );
     });
 
     it('should allow claiming after new merkle root with new XP', async () => {
-      await prisma.user.create({ data: { id: USER_A, email: `${USER_A}@test.com` } });
-      
+      await prisma.user.create({
+        data: { id: USER_A, email: `${USER_A}@test.com` },
+      });
+
       // First trade and claim
       await prisma.trade.create({
         data: { id: 'TRADE_1', userId: USER_A, feeAmount: 100, chain: 'EVM' },
@@ -557,6 +624,3 @@ describe('XP Claim Flow (Unit Tests)', () => {
     });
   });
 });
-
-
-

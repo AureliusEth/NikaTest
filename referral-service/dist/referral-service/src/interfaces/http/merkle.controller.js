@@ -200,7 +200,8 @@ let MerkleController = MerkleController_1 = class MerkleController {
                     };
                 }
                 onChainRoot = await this.evmService.getMerkleRoot(contractAddress);
-                onChainVersion = await this.evmService.getMerkleRootVersion(contractAddress);
+                onChainVersion =
+                    await this.evmService.getMerkleRootVersion(contractAddress);
             }
             else {
                 if (!this.svmService.isInitialized()) {
@@ -210,7 +211,8 @@ let MerkleController = MerkleController_1 = class MerkleController {
                     };
                 }
                 onChainRoot = await this.svmService.getMerkleRoot(contractAddress);
-                onChainVersion = await this.svmService.getMerkleRootVersion(contractAddress);
+                onChainVersion =
+                    await this.svmService.getMerkleRootVersion(contractAddress);
             }
             return {
                 chain,
@@ -220,7 +222,8 @@ let MerkleController = MerkleController_1 = class MerkleController {
                 onChainVersion,
                 databaseRoot: databaseRoot?.root || null,
                 databaseVersion: databaseRoot?.version || null,
-                synced: databaseRoot?.root === onChainRoot && databaseRoot?.version === onChainVersion,
+                synced: databaseRoot?.root === onChainRoot &&
+                    databaseRoot?.version === onChainVersion,
             };
         }
         catch (error) {

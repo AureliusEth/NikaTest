@@ -1,6 +1,6 @@
 /**
  * Domain Repository Interface - Idempotency Store
- * 
+ *
  * This interface defines the contract for managing idempotency keys.
  * Implementations belong in the infrastructure layer.
  */
@@ -17,4 +17,3 @@ export interface IdempotencyStore {
    */
   put(key: string): Promise<void>;
 }
-

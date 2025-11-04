@@ -50,7 +50,7 @@ let TradesAppService = class TradesAppService {
             token,
             chain,
         });
-        await this.ledgerRepo.recordEntries(splits.map(s => ({
+        await this.ledgerRepo.recordEntries(splits.map((s) => ({
             beneficiaryId: s.beneficiaryId,
             sourceTradeId: params.tradeId,
             level: s.level,
@@ -59,7 +59,7 @@ let TradesAppService = class TradesAppService {
             token: s.token,
             destination: s.destination,
         })));
-        const treasurySplits = splits.filter(s => s.destination === 'treasury');
+        const treasurySplits = splits.filter((s) => s.destination === 'treasury');
         for (const split of treasurySplits) {
             await this.claimService.updateTreasuryBalance(chain, token, split.amount);
         }

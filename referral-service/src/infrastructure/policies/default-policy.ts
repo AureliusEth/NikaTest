@@ -1,21 +1,25 @@
-import { CommissionPolicy, CommissionContext, Split } from '../../domain/policies';
+import {
+  CommissionPolicy,
+  CommissionContext,
+  Split,
+} from '../../domain/policies';
 
 /**
  * Default Commission Policy Implementation
- * 
+ *
  * SQE Fee Bundling:
  * - Cashback: configurable per user (e.g., 10%)
  * - Level 1 (direct referral): 30%
  * - Level 2 (referral's referral): 3%
  * - Level 3 (3rd level): 2%
  * - Treasury: Remainder (e.g., 55% if cashback is 10%)
- * 
+ *
  * Fee Split by Destination:
  * - Treasury → Direct to Nika (remaining amount)
  * - Claimable → Merkle root smart contract (cashback + commissions)
  */
 export class DefaultPolicy implements CommissionPolicy {
-  private readonly uplineRates = [0.30, 0.03, 0.02]; // Level 1, 2, 3
+  private readonly uplineRates = [0.3, 0.03, 0.02]; // Level 1, 2, 3
   private readonly TREASURY_BENEFICIARY = 'NIKA_TREASURY';
 
   calculateSplits(tradeFee: number, ctx: CommissionContext): Split[] {
@@ -76,4 +80,3 @@ export class DefaultPolicy implements CommissionPolicy {
     return splits;
   }
 }
-

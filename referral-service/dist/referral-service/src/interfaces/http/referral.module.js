@@ -32,7 +32,13 @@ exports.ReferralModule = ReferralModule;
 exports.ReferralModule = ReferralModule = __decorate([
     (0, common_1.Module)({
         imports: [prisma_module_1.PrismaModule, blockchain_module_1.BlockchainModule],
-        controllers: [referral_controller_1.ReferralController, trades_controller_1.TradesController, user_controller_1.UserController, auth_controller_1.AuthController, merkle_controller_1.MerkleController],
+        controllers: [
+            referral_controller_1.ReferralController,
+            trades_controller_1.TradesController,
+            user_controller_1.UserController,
+            auth_controller_1.AuthController,
+            merkle_controller_1.MerkleController,
+        ],
         providers: [
             referral_app_service_1.ReferralAppService,
             trades_app_service_1.TradesAppService,
@@ -50,7 +56,12 @@ exports.ReferralModule = ReferralModule = __decorate([
             auth_service_1.AuthService,
             session_auth_guard_1.SessionAuthGuard,
         ],
-        exports: [referral_app_service_1.ReferralAppService, trades_app_service_1.TradesAppService, auth_service_1.AuthService, merkle_tree_service_1.MerkleTreeService],
+        exports: [
+            referral_app_service_1.ReferralAppService,
+            trades_app_service_1.TradesAppService,
+            auth_service_1.AuthService,
+            merkle_tree_service_1.MerkleTreeService,
+        ],
     })
 ], ReferralModule);
 //# sourceMappingURL=referral.module.js.map

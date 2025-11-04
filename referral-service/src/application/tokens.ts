@@ -5,5 +5,3 @@ export const TOKENS = {
   IdempotencyStore: Symbol('IdempotencyStore'),
   TradesRepository: Symbol('TradesRepository'),
 };
-
-

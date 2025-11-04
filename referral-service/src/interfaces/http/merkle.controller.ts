@@ -1,4 +1,13 @@
-import { Controller, Get, Post, Query, Param, UseGuards, Body, Req } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Query,
+  Param,
+  UseGuards,
+  Body,
+  Req,
+} from '@nestjs/common';
 import { Logger } from '@nestjs/common';
 import { MerkleTreeService } from '../../infrastructure/services/merkle-tree.service';
 import { EvmBlockchainService } from '../../infrastructure/services/evm-blockchain.service';
@@ -10,7 +19,7 @@ import { getContractAddressForChain } from '../../common/chain-constants';
 
 /**
  * Merkle Tree Controller
- * 
+ *
  * Provides endpoints for:
  * - Getting latest merkle root (for smart contract)
  * - Generating merkle proofs (for user claims)
@@ -21,7 +30,7 @@ import { getContractAddressForChain } from '../../common/chain-constants';
 @Controller('api/merkle')
 export class MerkleController {
   private readonly logger = new Logger(MerkleController.name);
-  
+
   constructor(
     private readonly merkleService: MerkleTreeService,
     private readonly evmService: EvmBlockchainService,
@@ -32,10 +41,10 @@ export class MerkleController {
 
   /**
    * GET /api/merkle/root/:chain/:token
-   * 
+   *
    * Gets the latest merkle root for a chain/token pair.
    * This is what the smart contract needs to verify claims.
-   * 
+   *
    * Example: GET /api/merkle/root/EVM/USDC
    * Response: {
    *   chain: "EVM",
@@ -52,25 +61,26 @@ export class MerkleController {
     @Param('token') token: string,
   ) {
     const root = await this.merkleService.getLatestRoot(chain, token);
-    
+
     if (!root) {
       return {
         chain,
         token,
         root: null,
-        message: 'No merkle root generated yet. Call POST /api/merkle/generate to create one.',
+        message:
+          'No merkle root generated yet. Call POST /api/merkle/generate to create one.',
       };
     }
-    
+
     return root;
   }
 
   /**
    * GET /api/merkle/proof/:chain/:token
-   * 
+   *
    * Generates a merkle proof for the authenticated user.
    * The user can submit this proof to the smart contract to claim funds.
-   * 
+   *
    * Example: GET /api/merkle/proof/EVM/USDC
    * Response: {
    *   beneficiaryId: "user123",
@@ -98,19 +108,23 @@ export class MerkleController {
 
     // Get latest root
     const rootData = await this.merkleService.getLatestRoot(chain, token);
-    
+
     if (!rootData) {
       return {
-        error: 'No merkle root found. Generate one first with POST /api/merkle/generate',
+        error:
+          'No merkle root found. Generate one first with POST /api/merkle/generate',
       };
     }
 
     // Get all claimable balances (to rebuild tree)
-    const balances = await this.merkleService['getClaimableBalances'](chain, token);
-    
+    const balances = await this.merkleService['getClaimableBalances'](
+      chain,
+      token,
+    );
+
     // Generate proof for this user
     const proof = this.merkleService.generateProof(userId, balances);
-    
+
     if (!proof) {
       return {
         beneficiaryId: userId,
@@ -133,15 +147,15 @@ export class MerkleController {
 
   /**
    * POST /api/merkle/generate/:chain/:token
-   * 
+   *
    * Generates and stores a new merkle root from current claimable balances.
    * Automatically updates the merkle root on-chain if blockchain services are configured.
    * Set ?updateOnChain=false to skip on-chain update.
-   * 
+   *
    * This should be called:
    * - Periodically (e.g., every hour)
    * - After significant balance changes
-   * 
+   *
    * Example: POST /api/merkle/generate/EVM/USDC
    * Response: {
    *   chain: "EVM",
@@ -159,14 +173,19 @@ export class MerkleController {
     @Param('token') token: string,
     @Query('updateOnChain') skipUpdate?: string,
   ) {
-    const rootData = await this.merkleService.generateAndStoreRoot(chain, token);
-    
+    const rootData = await this.merkleService.generateAndStoreRoot(
+      chain,
+      token,
+    );
+
     let txHash: string | undefined;
     let onChainUpdated = false;
-    
+
     // If there are no leaves, skip on-chain update entirely (prevents zero-root overwrites)
     if (rootData.leafCount === 0) {
-      this.logger.warn(`Skipping on-chain update for ${chain}/${token}: zero leafCount`);
+      this.logger.warn(
+        `Skipping on-chain update for ${chain}/${token}: zero leafCount`,
+      );
       return {
         ...rootData,
         message: `Merkle root version ${rootData.version} generated. No on-chain update (zero leafCount). Contract address: ${this.getContractAddress(chain, token)}`,
@@ -177,36 +196,45 @@ export class MerkleController {
 
     // Update on-chain by default, unless ?updateOnChain=false is explicitly provided
     const shouldUpdate = skipUpdate !== 'false';
-    
+
     if (shouldUpdate) {
       const contractAddress = this.getContractAddress(chain, token);
-      
+
       if (contractAddress !== 'NOT_CONFIGURED') {
         try {
           if (chain === 'EVM' && this.evmService.isInitialized()) {
-            txHash = await this.evmService.updateMerkleRoot(contractAddress, rootData.root);
+            txHash = await this.evmService.updateMerkleRoot(
+              contractAddress,
+              rootData.root,
+            );
             onChainUpdated = true;
           } else if (chain === 'SVM' && this.svmService.isInitialized()) {
-            txHash = await this.svmService.updateMerkleRoot(contractAddress, rootData.root);
+            txHash = await this.svmService.updateMerkleRoot(
+              contractAddress,
+              rootData.root,
+            );
             onChainUpdated = true;
           } else {
             this.logger.warn(
-              `${chain} blockchain service not initialized. Set ${chain}_RPC_URL and ${chain}_PRIVATE_KEY environment variables.`
+              `${chain} blockchain service not initialized. Set ${chain}_RPC_URL and ${chain}_PRIVATE_KEY environment variables.`,
             );
           }
         } catch (error: any) {
-          this.logger.error(`Failed to update merkle root on-chain: ${error.message}`, error.stack);
+          this.logger.error(
+            `Failed to update merkle root on-chain: ${error.message}`,
+            error.stack,
+          );
           // Continue - return the generated root even if on-chain update failed
         }
       }
     }
-    
+
     return {
       ...rootData,
-      message: onChainUpdated 
+      message: onChainUpdated
         ? `Merkle root version ${rootData.version} generated and updated on-chain successfully.`
         : `Merkle root version ${rootData.version} generated successfully. ` +
-          (shouldUpdate 
+          (shouldUpdate
             ? `On-chain update skipped or failed. Contract address: ${this.getContractAddress(chain, token)}`
             : `On-chain update skipped. Contract address: ${this.getContractAddress(chain, token)}`),
       contractUpdateRequired: !onChainUpdated,
@@ -223,10 +251,10 @@ export class MerkleController {
 
   /**
    * POST /api/merkle/update-on-chain/:chain/:token
-   * 
+   *
    * Updates the merkle root on the smart contract.
    * Requires blockchain service to be configured with a signer.
-   * 
+   *
    * Example: POST /api/merkle/update-on-chain/EVM/USDC
    * Response: {
    *   success: true,
@@ -244,15 +272,16 @@ export class MerkleController {
   ) {
     // Get latest root from database
     const rootData = await this.merkleService.getLatestRoot(chain, token);
-    
+
     if (!rootData) {
       return {
-        error: 'No merkle root found. Generate one first with POST /api/merkle/generate',
+        error:
+          'No merkle root found. Generate one first with POST /api/merkle/generate',
       };
     }
 
     const contractAddress = this.getContractAddress(chain, token);
-    
+
     if (contractAddress === 'NOT_CONFIGURED') {
       return {
         error: `Contract address not configured for ${chain}/${token}. Set ${chain}_${token}_CONTRACT_ADDRESS environment variable.`,
@@ -261,21 +290,29 @@ export class MerkleController {
 
     try {
       let txHash: string;
-      
+
       if (chain === 'EVM') {
         if (!this.evmService.isInitialized()) {
           return {
-            error: 'EVM blockchain service not initialized. Set EVM_RPC_URL and EVM_PRIVATE_KEY environment variables.',
+            error:
+              'EVM blockchain service not initialized. Set EVM_RPC_URL and EVM_PRIVATE_KEY environment variables.',
           };
         }
-        txHash = await this.evmService.updateMerkleRoot(contractAddress, rootData.root);
+        txHash = await this.evmService.updateMerkleRoot(
+          contractAddress,
+          rootData.root,
+        );
       } else {
         if (!this.svmService.isInitialized()) {
           return {
-            error: 'SVM blockchain service not initialized. Set SVM_RPC_URL and SVM_PRIVATE_KEY environment variables.',
+            error:
+              'SVM blockchain service not initialized. Set SVM_RPC_URL and SVM_PRIVATE_KEY environment variables.',
           };
         }
-        txHash = await this.svmService.updateMerkleRoot(contractAddress, rootData.root);
+        txHash = await this.svmService.updateMerkleRoot(
+          contractAddress,
+          rootData.root,
+        );
       }
 
       return {
@@ -300,9 +337,9 @@ export class MerkleController {
 
   /**
    * GET /api/merkle/contract-status/:chain/:token
-   * 
+   *
    * Gets the current merkle root and version from the on-chain contract.
-   * 
+   *
    * Example: GET /api/merkle/contract-status/EVM/USDC
    * Response: {
    *   chain: "EVM",
@@ -320,7 +357,7 @@ export class MerkleController {
     @Param('token') token: string,
   ) {
     const contractAddress = this.getContractAddress(chain, token);
-    
+
     if (contractAddress === 'NOT_CONFIGURED') {
       return {
         error: `Contract address not configured for ${chain}/${token}`,
@@ -341,7 +378,8 @@ export class MerkleController {
           };
         }
         onChainRoot = await this.evmService.getMerkleRoot(contractAddress);
-        onChainVersion = await this.evmService.getMerkleRootVersion(contractAddress);
+        onChainVersion =
+          await this.evmService.getMerkleRootVersion(contractAddress);
       } else {
         if (!this.svmService.isInitialized()) {
           return {
@@ -350,7 +388,8 @@ export class MerkleController {
           };
         }
         onChainRoot = await this.svmService.getMerkleRoot(contractAddress);
-        onChainVersion = await this.svmService.getMerkleRootVersion(contractAddress);
+        onChainVersion =
+          await this.svmService.getMerkleRootVersion(contractAddress);
       }
 
       return {
@@ -361,7 +400,9 @@ export class MerkleController {
         onChainVersion,
         databaseRoot: databaseRoot?.root || null,
         databaseVersion: databaseRoot?.version || null,
-        synced: databaseRoot?.root === onChainRoot && databaseRoot?.version === onChainVersion,
+        synced:
+          databaseRoot?.root === onChainRoot &&
+          databaseRoot?.version === onChainVersion,
       };
     } catch (error: any) {
       return {
@@ -376,10 +417,10 @@ export class MerkleController {
 
   /**
    * POST /api/merkle/verify-on-chain/:chain/:token
-   * 
+   *
    * Verifies a merkle proof on-chain.
    * Body: { proof: string[], user_id: string, amount: number, token?: string }
-   * 
+   *
    * Example: POST /api/merkle/verify-on-chain/EVM/USDC
    * Body: {
    *   "proof": ["0xabc...", "0xdef..."],
@@ -392,10 +433,11 @@ export class MerkleController {
   async verifyOnChain(
     @Param('chain') chain: 'EVM' | 'SVM',
     @Param('token') token: string,
-    @Body() body: { proof: string[]; user_id: string; amount: number; token?: string },
+    @Body()
+    body: { proof: string[]; user_id: string; amount: number; token?: string },
   ) {
     const contractAddress = this.getContractAddress(chain, token);
-    
+
     if (contractAddress === 'NOT_CONFIGURED') {
       return {
         error: `Contract address not configured for ${chain}/${token}`,
@@ -455,15 +497,15 @@ export class MerkleController {
 
   /**
    * POST /api/merkle/claim/:chain/:token
-   * 
+   *
    * Claims XP for the authenticated user (simulated - no actual token transfer).
    * Verifies proof off-chain and records claim in database.
-   * 
+   *
    * No wallet connection needed - XP is tracked in database, not on-chain.
    */
   /**
    * GET /api/merkle/claim-preview/:chain/:token
-   * 
+   *
    * Preview claim details before actually claiming.
    * Shows user their claimable amount, treasury split, etc.
    */
@@ -492,15 +534,26 @@ export class MerkleController {
       };
     }
 
-    const balances = await this.merkleService['getClaimableBalances'](chain, token);
+    const balances = await this.merkleService['getClaimableBalances'](
+      chain,
+      token,
+    );
     const proof = this.merkleService.generateProof(userId, balances);
 
     // Get treasury balances
-    const evmTreasuryBalance = await this.claimService.getTreasuryBalance('EVM', token);
-    const svmTreasuryBalance = await this.claimService.getTreasuryBalance('SVM', token);
+    const evmTreasuryBalance = await this.claimService.getTreasuryBalance(
+      'EVM',
+      token,
+    );
+    const svmTreasuryBalance = await this.claimService.getTreasuryBalance(
+      'SVM',
+      token,
+    );
 
     // Calculate user's cashback (level 0 entries) from ledger, filtered by chain
-    const cashbackResult = await this.prisma.$queryRaw<Array<{ totalCashback: string }>>`
+    const cashbackResult = await this.prisma.$queryRaw<
+      Array<{ totalCashback: string }>
+    >`
       SELECT COALESCE(SUM(l.amount), 0)::text as "totalCashback"
       FROM "CommissionLedgerEntry" l
       INNER JOIN "Trade" t ON l."sourceTradeId" = t.id
@@ -510,11 +563,13 @@ export class MerkleController {
         AND l.destination = 'claimable'
         AND t.chain = ${chain}
     `;
-    
+
     const userCashback = Number(cashbackResult[0]?.totalCashback || 0);
-    
+
     // Calculate commission earnings (level > 0 entries)
-    const commissionResult = await this.prisma.$queryRaw<Array<{ totalCommissions: string }>>`
+    const commissionResult = await this.prisma.$queryRaw<
+      Array<{ totalCommissions: string }>
+    >`
       SELECT COALESCE(SUM(l.amount), 0)::text as "totalCommissions"
       FROM "CommissionLedgerEntry" l
       INNER JOIN "Trade" t ON l."sourceTradeId" = t.id
@@ -524,7 +579,7 @@ export class MerkleController {
         AND l.destination = 'claimable'
         AND t.chain = ${chain}
     `;
-    
+
     const userCommissions = Number(commissionResult[0]?.totalCommissions || 0);
 
     return {
@@ -558,7 +613,7 @@ export class MerkleController {
 
   /**
    * GET /api/merkle/treasury-balance/:chain/:token
-   * 
+   *
    * Gets treasury balance for a chain/token pair.
    */
   @Get('treasury-balance/:chain/:token')
@@ -576,7 +631,7 @@ export class MerkleController {
 
   /**
    * POST /api/merkle/generate-all
-   * 
+   *
    * Manual trigger to generate ALL merkle roots (for testing).
    * Generates roots for EVM/XP, EVM/USDC, SVM/XP, SVM/USDC.
    * Automatically updates merkle roots on-chain by default.
@@ -632,7 +687,7 @@ export class MerkleController {
 
   /**
    * POST /api/merkle/transfer-treasury/:chain/:token
-   * 
+   *
    * Transfers treasury funds to treasury address.
    * Admin only.
    */
@@ -644,4 +699,3 @@ export class MerkleController {
     return await this.claimService.transferTreasuryFunds(chain, token);
   }
 }
-

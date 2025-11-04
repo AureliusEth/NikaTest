@@ -2,7 +2,7 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.DefaultPolicy = void 0;
 class DefaultPolicy {
-    uplineRates = [0.30, 0.03, 0.02];
+    uplineRates = [0.3, 0.03, 0.02];
     TREASURY_BENEFICIARY = 'NIKA_TREASURY';
     calculateSplits(tradeFee, ctx) {
         const token = ctx.token ?? 'XP';

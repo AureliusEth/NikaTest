@@ -4,7 +4,8 @@ import { SignJWT, jwtVerify } from 'jose';
 @Injectable()
 export class AuthService {
   private readonly secret = new TextEncoder().encode(
-    process.env.JWT_SECRET || 'your-secret-key-change-in-production-min-32-chars'
+    process.env.JWT_SECRET ||
+      'your-secret-key-change-in-production-min-32-chars',
   );
 
   async createSession(userId: string): Promise<string> {
@@ -26,4 +27,3 @@ export class AuthService {
     }
   }
 }
-

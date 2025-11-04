@@ -1,34 +1,34 @@
 /**
  * Enhanced SVM NikaTreasury Contract Integration Tests
- * 
+ *
  * PURPOSE:
  * Tests the NikaTreasury Solana program with keccak256 hashing for EVM compatibility.
  * These are integration tests that deploy and interact with the actual Anchor program.
- * 
+ *
  * CONTRACT FUNCTIONALITY:
  * - Store Merkle root in on-chain state account
  * - Verify Merkle proofs using keccak256 (matches EVM)
  * - Emit events for proof verification results
  * - Authority-only root updates
  * - State account initialization with keypair
- * 
+ *
  * TESTING APPROACH:
  * - Uses Anchor framework for Solana interactions
  * - Tests real transaction execution on devnet/localnet
  * - Validates keccak256 hashing compatibility with backend
  * - Tests state account initialization and authority checks
- * 
+ *
  * PROOF FORMAT (STRING-BASED):
  * - Leaf: keccak256("userId:token:amount") where userId is email string
  * - Amount: String with 8 decimal places (e.g., "100.00000000")
  * - Token: String (e.g., "XP", "USDC")
- * 
+ *
  * SETUP REQUIREMENTS:
  * - Anchor workspace configuration
  * - Deployed program or local validator
  * - State account keypair (state-keypair.json)
  * - Authority wallet with SOL for transactions
- * 
+ *
  * KEY DIFFERENCES FROM ORIGINAL:
  * - Uses keccak256 instead of SHA256
  * - Accepts string parameters (userId, token, amount) instead of PublicKey + u64
@@ -73,7 +73,7 @@ describe('SVM NikaTreasury Integration (keccak256)', () => {
   function buildMerkleTree(
     userIds: string[],
     tokens: string[],
-    amounts: string[]
+    amounts: string[],
   ): { root: Buffer; leaves: Buffer[] } {
     if (userIds.length !== tokens.length || userIds.length !== amounts.length) {
       throw new Error('Arrays length mismatch');
@@ -84,7 +84,7 @@ describe('SVM NikaTreasury Integration (keccak256)', () => {
 
     // Create leaves using keccak256
     const leaves: Buffer[] = userIds.map((userId, i) =>
-      createLeaf(userId, tokens[i], amounts[i])
+      createLeaf(userId, tokens[i], amounts[i]),
     );
 
     // Build tree by pairing leaves
@@ -99,7 +99,7 @@ describe('SVM NikaTreasury Integration (keccak256)', () => {
             Buffer.compare(current[i], current[i + 1]) <= 0
               ? [current[i], current[i + 1]]
               : [current[i + 1], current[i]];
-          
+
           const combined = Buffer.concat([left, right]);
           const parentHash = keccak256(combined);
           next.push(Buffer.from(parentHash.slice(2), 'hex'));
@@ -123,7 +123,7 @@ describe('SVM NikaTreasury Integration (keccak256)', () => {
     amounts: string[],
     targetUserId: string,
     targetToken: string,
-    targetAmount: string
+    targetAmount: string,
   ): Buffer[] {
     if (userIds.length !== tokens.length || userIds.length !== amounts.length) {
       throw new Error('Arrays length mismatch');
@@ -131,7 +131,7 @@ describe('SVM NikaTreasury Integration (keccak256)', () => {
 
     // Create leaves
     const leaves: Buffer[] = userIds.map((userId, i) =>
-      createLeaf(userId, tokens[i], amounts[i])
+      createLeaf(userId, tokens[i], amounts[i]),
     );
 
     // Find target leaf index
@@ -163,7 +163,7 @@ describe('SVM NikaTreasury Integration (keccak256)', () => {
             Buffer.compare(current[i], current[i + 1]) <= 0
               ? [current[i], current[i + 1]]
               : [current[i + 1], current[i]];
-          
+
           const combined = Buffer.concat([left, right]);
           const parentHash = keccak256(combined);
           next.push(Buffer.from(parentHash.slice(2), 'hex'));
@@ -186,7 +186,7 @@ describe('SVM NikaTreasury Integration (keccak256)', () => {
     amounts: string[],
     targetUserId: string,
     targetToken: string,
-    targetAmount: string
+    targetAmount: string,
   ): Promise<boolean> {
     const proof = generateProof(
       userIds,
@@ -194,7 +194,7 @@ describe('SVM NikaTreasury Integration (keccak256)', () => {
       amounts,
       targetUserId,
       targetToken,
-      targetAmount
+      targetAmount,
     );
 
     const proofBytes = proof.map((p) => Array.from(p));
@@ -261,10 +261,14 @@ describe('SVM NikaTreasury Integration (keccak256)', () => {
 
   beforeEach(async function () {
     if (skipTests) {
-      console.log('⚠️  Skipping SVM contract tests: No localnet validator running');
+      console.log(
+        '⚠️  Skipping SVM contract tests: No localnet validator running',
+      );
       console.log('   To run these tests:');
       console.log('   1. Start Solana local validator: solana-test-validator');
-      console.log('   2. Deploy program: cd contracts/svm/nika-treasury && anchor test --skip-local-validator');
+      console.log(
+        '   2. Deploy program: cd contracts/svm/nika-treasury && anchor test --skip-local-validator',
+      );
       console.log('   3. Set SVM_TEST_ENABLED=true');
       this.skip();
       return;
@@ -279,7 +283,7 @@ describe('SVM NikaTreasury Integration (keccak256)', () => {
     try {
       const signature = await provider.connection.requestAirdrop(
         authority.publicKey,
-        2 * anchor.web3.LAMPORTS_PER_SOL
+        2 * anchor.web3.LAMPORTS_PER_SOL,
       );
       await provider.connection.confirmTransaction(signature);
     } catch (error) {
@@ -289,52 +293,58 @@ describe('SVM NikaTreasury Integration (keccak256)', () => {
   });
 
   describe('State Account Initialization', () => {
-    (skipTests ? it.skip : it)('should initialize state account with zero root', async () => {
-      // Arrange: Zero root
-      const zeroRoot = new Array(32).fill(0);
+    (skipTests ? it.skip : it)(
+      'should initialize state account with zero root',
+      async () => {
+        // Arrange: Zero root
+        const zeroRoot = new Array(32).fill(0);
 
-      // Act: Initialize state
-      await program.methods
-        .initialize(zeroRoot)
-        .accounts({
-          state: state.publicKey,
-          authority: authority.publicKey,
-          systemProgram: SystemProgram.programId,
-        })
-        .signers([authority, state])
-        .rpc();
+        // Act: Initialize state
+        await program.methods
+          .initialize(zeroRoot)
+          .accounts({
+            state: state.publicKey,
+            authority: authority.publicKey,
+            systemProgram: SystemProgram.programId,
+          })
+          .signers([authority, state])
+          .rpc();
 
-      // Assert: State initialized correctly
-      const stateAccount = await program.account.state.fetch(state.publicKey);
-      expect(stateAccount.merkleRoot).to.deep.equal(zeroRoot);
-      expect(stateAccount.version.toNumber()).to.equal(0);
-      expect(stateAccount.authority.toString()).to.equal(
-        authority.publicKey.toString()
-      );
-    });
+        // Assert: State initialized correctly
+        const stateAccount = await program.account.state.fetch(state.publicKey);
+        expect(stateAccount.merkleRoot).to.deep.equal(zeroRoot);
+        expect(stateAccount.version.toNumber()).to.equal(0);
+        expect(stateAccount.authority.toString()).to.equal(
+          authority.publicKey.toString(),
+        );
+      },
+    );
 
-    (skipTests ? it.skip : it)('should initialize state with real merkle root', async () => {
-      // Arrange: Create merkle root using keccak256
-      const userIds = ['user@example.com'];
-      const tokens = ['XP'];
-      const amounts = ['100.00000000'];
-      const { root } = buildMerkleTree(userIds, tokens, amounts);
+    (skipTests ? it.skip : it)(
+      'should initialize state with real merkle root',
+      async () => {
+        // Arrange: Create merkle root using keccak256
+        const userIds = ['user@example.com'];
+        const tokens = ['XP'];
+        const amounts = ['100.00000000'];
+        const { root } = buildMerkleTree(userIds, tokens, amounts);
 
-      // Act: Initialize
-      await program.methods
-        .initialize(Array.from(root))
-        .accounts({
-          state: state.publicKey,
-          authority: authority.publicKey,
-          systemProgram: SystemProgram.programId,
-        })
-        .signers([authority, state])
-        .rpc();
+        // Act: Initialize
+        await program.methods
+          .initialize(Array.from(root))
+          .accounts({
+            state: state.publicKey,
+            authority: authority.publicKey,
+            systemProgram: SystemProgram.programId,
+          })
+          .signers([authority, state])
+          .rpc();
 
-      // Assert
-      const stateAccount = await program.account.state.fetch(state.publicKey);
-      expect(stateAccount.merkleRoot).to.deep.equal(Array.from(root));
-    });
+        // Assert
+        const stateAccount = await program.account.state.fetch(state.publicKey);
+        expect(stateAccount.merkleRoot).to.deep.equal(Array.from(root));
+      },
+    );
   });
 
   describe('Root Updates with Authority Check', () => {
@@ -380,60 +390,68 @@ describe('SVM NikaTreasury Integration (keccak256)', () => {
       expect(stateAccount.version.toNumber()).to.equal(1);
     });
 
-    (skipTests ? it.skip : it)('should reject update from non-authority', async () => {
-      // Arrange: New root and non-authority signer
-      const newRoot = Buffer.from(new Array(32).fill(1));
+    (skipTests ? it.skip : it)(
+      'should reject update from non-authority',
+      async () => {
+        // Arrange: New root and non-authority signer
+        const newRoot = Buffer.from(new Array(32).fill(1));
 
-      // Airdrop to non-authority
-      const sig = await provider.connection.requestAirdrop(
-        nonAuthority.publicKey,
-        anchor.web3.LAMPORTS_PER_SOL
-      );
-      await provider.connection.confirmTransaction(sig);
-
-      // Act & Assert: Should fail
-      try {
-        await program.methods
-          .updateRoot(Array.from(newRoot))
-          .accounts({
-            state: state.publicKey,
-            authority: nonAuthority.publicKey,
-          })
-          .signers([nonAuthority])
-          .rpc();
-        expect.fail('Should have thrown an error');
-      } catch (err: any) {
-        // Expected: Unauthorized or ConstraintHasOne error
-        expect(err.error?.errorCode?.code || err.toString()).to.match(
-          /Unauthorized|ConstraintHasOne|has_one/i
+        // Airdrop to non-authority
+        const sig = await provider.connection.requestAirdrop(
+          nonAuthority.publicKey,
+          anchor.web3.LAMPORTS_PER_SOL,
         );
-      }
-    });
+        await provider.connection.confirmTransaction(sig);
 
-    (skipTests ? it.skip : it)('should increment version on each update', async () => {
-      // Arrange: Multiple roots
-      const roots = [
-        Buffer.from(new Array(32).fill(1)),
-        Buffer.from(new Array(32).fill(2)),
-        Buffer.from(new Array(32).fill(3)),
-      ];
+        // Act & Assert: Should fail
+        try {
+          await program.methods
+            .updateRoot(Array.from(newRoot))
+            .accounts({
+              state: state.publicKey,
+              authority: nonAuthority.publicKey,
+            })
+            .signers([nonAuthority])
+            .rpc();
+          expect.fail('Should have thrown an error');
+        } catch (err: any) {
+          // Expected: Unauthorized or ConstraintHasOne error
+          expect(err.error?.errorCode?.code || err.toString()).to.match(
+            /Unauthorized|ConstraintHasOne|has_one/i,
+          );
+        }
+      },
+    );
 
-      // Act: Update multiple times
-      for (let i = 0; i < roots.length; i++) {
-        await program.methods
-          .updateRoot(Array.from(roots[i]))
-          .accounts({
-            state: state.publicKey,
-            authority: authority.publicKey,
-          })
-          .signers([authority])
-          .rpc();
+    (skipTests ? it.skip : it)(
+      'should increment version on each update',
+      async () => {
+        // Arrange: Multiple roots
+        const roots = [
+          Buffer.from(new Array(32).fill(1)),
+          Buffer.from(new Array(32).fill(2)),
+          Buffer.from(new Array(32).fill(3)),
+        ];
 
-        // Assert: Version increments
-        const stateAccount = await program.account.state.fetch(state.publicKey);
-        expect(stateAccount.version.toNumber()).to.equal(i + 1);
-      }
-    });
+        // Act: Update multiple times
+        for (let i = 0; i < roots.length; i++) {
+          await program.methods
+            .updateRoot(Array.from(roots[i]))
+            .accounts({
+              state: state.publicKey,
+              authority: authority.publicKey,
+            })
+            .signers([authority])
+            .rpc();
+
+          // Assert: Version increments
+          const stateAccount = await program.account.state.fetch(
+            state.publicKey,
+          );
+          expect(stateAccount.version.toNumber()).to.equal(i + 1);
+        }
+      },
+    );
   });
 
   describe('Proof Verification with keccak256', () => {
@@ -455,275 +473,299 @@ describe('SVM NikaTreasury Integration (keccak256)', () => {
         .rpc();
     });
 
-    (skipTests ? it.skip : it)('should verify proof for single user with email ID', async () => {
-      // Arrange: Single user with email address
-      const userIds = ['testuser@example.com'];
-      const tokens = ['XP'];
-      const amounts = ['100.00000000']; // 8 decimals
+    (skipTests ? it.skip : it)(
+      'should verify proof for single user with email ID',
+      async () => {
+        // Arrange: Single user with email address
+        const userIds = ['testuser@example.com'];
+        const tokens = ['XP'];
+        const amounts = ['100.00000000']; // 8 decimals
 
-      const { root } = buildMerkleTree(userIds, tokens, amounts);
+        const { root } = buildMerkleTree(userIds, tokens, amounts);
 
-      // Update root
-      await program.methods
-        .updateRoot(Array.from(root))
-        .accounts({
-          state: state.publicKey,
-          authority: authority.publicKey,
-        })
-        .signers([authority])
-        .rpc();
+        // Update root
+        await program.methods
+          .updateRoot(Array.from(root))
+          .accounts({
+            state: state.publicKey,
+            authority: authority.publicKey,
+          })
+          .signers([authority])
+          .rpc();
 
-      // Act: Verify proof
-      const result = await verifyProofAndGetResult(
-        userIds,
-        tokens,
-        amounts,
-        userIds[0],
-        tokens[0],
-        amounts[0]
-      );
-
-      // Assert: Proof is valid
-      expect(result).to.be.true;
-    });
-
-    (skipTests ? it.skip : it)('should verify proof with empty proof array (proofLen=0)', async () => {
-      // Arrange: Single leaf tree
-      const userIds = ['solo@example.com'];
-      const tokens = ['XP'];
-      const amounts = ['1821.30000000'];
-
-      const { root } = buildMerkleTree(userIds, tokens, amounts);
-
-      await program.methods
-        .updateRoot(Array.from(root))
-        .accounts({
-          state: state.publicKey,
-          authority: authority.publicKey,
-        })
-        .signers([authority])
-        .rpc();
-
-      // Act: Verify (proof will be empty array)
-      const result = await verifyProofAndGetResult(
-        userIds,
-        tokens,
-        amounts,
-        userIds[0],
-        tokens[0],
-        amounts[0]
-      );
-
-      // Assert: Valid even with proofLen=0
-      expect(result).to.be.true;
-    });
-
-    (skipTests ? it.skip : it)('should verify proof for multiple users', async () => {
-      // Arrange: Multiple users
-      const userIds = [
-        'user1@example.com',
-        'user2@example.com',
-        'user3@example.com',
-      ];
-      const tokens = ['XP', 'XP', 'XP'];
-      const amounts = ['100.00000000', '200.00000000', '300.00000000'];
-
-      const { root } = buildMerkleTree(userIds, tokens, amounts);
-
-      await program.methods
-        .updateRoot(Array.from(root))
-        .accounts({
-          state: state.publicKey,
-          authority: authority.publicKey,
-        })
-        .signers([authority])
-        .rpc();
-
-      // Act & Assert: Verify each user
-      for (let i = 0; i < userIds.length; i++) {
+        // Act: Verify proof
         const result = await verifyProofAndGetResult(
           userIds,
           tokens,
           amounts,
-          userIds[i],
-          tokens[i],
-          amounts[i]
+          userIds[0],
+          tokens[0],
+          amounts[0],
         );
+
+        // Assert: Proof is valid
         expect(result).to.be.true;
-      }
-    });
+      },
+    );
 
-    (skipTests ? it.skip : it)('should reject proof with wrong amount', async () => {
-      // Arrange: Valid tree
-      const userIds = ['user@example.com'];
-      const tokens = ['XP'];
-      const amounts = ['100.00000000'];
+    (skipTests ? it.skip : it)(
+      'should verify proof with empty proof array (proofLen=0)',
+      async () => {
+        // Arrange: Single leaf tree
+        const userIds = ['solo@example.com'];
+        const tokens = ['XP'];
+        const amounts = ['1821.30000000'];
 
-      const { root } = buildMerkleTree(userIds, tokens, amounts);
+        const { root } = buildMerkleTree(userIds, tokens, amounts);
 
-      await program.methods
-        .updateRoot(Array.from(root))
-        .accounts({
-          state: state.publicKey,
-          authority: authority.publicKey,
-        })
-        .signers([authority])
-        .rpc();
+        await program.methods
+          .updateRoot(Array.from(root))
+          .accounts({
+            state: state.publicKey,
+            authority: authority.publicKey,
+          })
+          .signers([authority])
+          .rpc();
 
-      // Act: Verify with wrong amount
-      const result = await verifyProofAndGetResult(
-        userIds,
-        tokens,
-        amounts,
-        userIds[0],
-        tokens[0],
-        '999.00000000' // Wrong amount
-      );
-
-      // Assert: Invalid
-      expect(result).to.be.false;
-    });
-
-    (skipTests ? it.skip : it)('should reject proof with wrong user ID', async () => {
-      // Arrange
-      const userIds = ['user1@example.com', 'user2@example.com'];
-      const tokens = ['XP', 'XP'];
-      const amounts = ['100.00000000', '200.00000000'];
-
-      const { root } = buildMerkleTree(userIds, tokens, amounts);
-
-      await program.methods
-        .updateRoot(Array.from(root))
-        .accounts({
-          state: state.publicKey,
-          authority: authority.publicKey,
-        })
-        .signers([authority])
-        .rpc();
-
-      // Act: Verify with wrong user ID
-      const result = await verifyProofAndGetResult(
-        userIds,
-        tokens,
-        amounts,
-        'attacker@example.com', // Wrong user
-        tokens[0],
-        amounts[0]
-      );
-
-      // Assert: Invalid
-      expect(result).to.be.false;
-    });
-
-    (skipTests ? it.skip : it)('should handle different tokens (USDC, ETH)', async () => {
-      // Arrange: Different tokens
-      const userIds = ['user@example.com', 'user@example.com'];
-      const tokens = ['USDC', 'ETH'];
-      const amounts = ['50.12345678', '0.01234567'];
-
-      const { root } = buildMerkleTree(userIds, tokens, amounts);
-
-      await program.methods
-        .updateRoot(Array.from(root))
-        .accounts({
-          state: state.publicKey,
-          authority: authority.publicKey,
-        })
-        .signers([authority])
-        .rpc();
-
-      // Act & Assert: Verify both
-      for (let i = 0; i < userIds.length; i++) {
+        // Act: Verify (proof will be empty array)
         const result = await verifyProofAndGetResult(
           userIds,
           tokens,
           amounts,
-          userIds[i],
-          tokens[i],
-          amounts[i]
+          userIds[0],
+          tokens[0],
+          amounts[0],
         );
+
+        // Assert: Valid even with proofLen=0
         expect(result).to.be.true;
-      }
-    });
+      },
+    );
 
-    (skipTests ? it.skip : it)('should require exactly 8 decimal places in amount string', async () => {
-      // Arrange: Correct tree with 8 decimals
-      const userIds = ['user@example.com'];
-      const tokens = ['XP'];
-      const correctAmount = '100.00000000';
+    (skipTests ? it.skip : it)(
+      'should verify proof for multiple users',
+      async () => {
+        // Arrange: Multiple users
+        const userIds = [
+          'user1@example.com',
+          'user2@example.com',
+          'user3@example.com',
+        ];
+        const tokens = ['XP', 'XP', 'XP'];
+        const amounts = ['100.00000000', '200.00000000', '300.00000000'];
 
-      const { root } = buildMerkleTree(userIds, tokens, [correctAmount]);
+        const { root } = buildMerkleTree(userIds, tokens, amounts);
 
-      await program.methods
-        .updateRoot(Array.from(root))
-        .accounts({
-          state: state.publicKey,
-          authority: authority.publicKey,
-        })
-        .signers([authority])
-        .rpc();
+        await program.methods
+          .updateRoot(Array.from(root))
+          .accounts({
+            state: state.publicKey,
+            authority: authority.publicKey,
+          })
+          .signers([authority])
+          .rpc();
 
-      // Act: Test wrong decimal precisions
-      const wrongAmounts = [
-        '100',            // No decimals
-        '100.0',          // 1 decimal
-        '100.000000',     // 6 decimals
-        '100.000000000',  // 9 decimals
-      ];
+        // Act & Assert: Verify each user
+        for (let i = 0; i < userIds.length; i++) {
+          const result = await verifyProofAndGetResult(
+            userIds,
+            tokens,
+            amounts,
+            userIds[i],
+            tokens[i],
+            amounts[i],
+          );
+          expect(result).to.be.true;
+        }
+      },
+    );
 
-      for (const wrongAmount of wrongAmounts) {
+    (skipTests ? it.skip : it)(
+      'should reject proof with wrong amount',
+      async () => {
+        // Arrange: Valid tree
+        const userIds = ['user@example.com'];
+        const tokens = ['XP'];
+        const amounts = ['100.00000000'];
+
+        const { root } = buildMerkleTree(userIds, tokens, amounts);
+
+        await program.methods
+          .updateRoot(Array.from(root))
+          .accounts({
+            state: state.publicKey,
+            authority: authority.publicKey,
+          })
+          .signers([authority])
+          .rpc();
+
+        // Act: Verify with wrong amount
         const result = await verifyProofAndGetResult(
+          userIds,
+          tokens,
+          amounts,
+          userIds[0],
+          tokens[0],
+          '999.00000000', // Wrong amount
+        );
+
+        // Assert: Invalid
+        expect(result).to.be.false;
+      },
+    );
+
+    (skipTests ? it.skip : it)(
+      'should reject proof with wrong user ID',
+      async () => {
+        // Arrange
+        const userIds = ['user1@example.com', 'user2@example.com'];
+        const tokens = ['XP', 'XP'];
+        const amounts = ['100.00000000', '200.00000000'];
+
+        const { root } = buildMerkleTree(userIds, tokens, amounts);
+
+        await program.methods
+          .updateRoot(Array.from(root))
+          .accounts({
+            state: state.publicKey,
+            authority: authority.publicKey,
+          })
+          .signers([authority])
+          .rpc();
+
+        // Act: Verify with wrong user ID
+        const result = await verifyProofAndGetResult(
+          userIds,
+          tokens,
+          amounts,
+          'attacker@example.com', // Wrong user
+          tokens[0],
+          amounts[0],
+        );
+
+        // Assert: Invalid
+        expect(result).to.be.false;
+      },
+    );
+
+    (skipTests ? it.skip : it)(
+      'should handle different tokens (USDC, ETH)',
+      async () => {
+        // Arrange: Different tokens
+        const userIds = ['user@example.com', 'user@example.com'];
+        const tokens = ['USDC', 'ETH'];
+        const amounts = ['50.12345678', '0.01234567'];
+
+        const { root } = buildMerkleTree(userIds, tokens, amounts);
+
+        await program.methods
+          .updateRoot(Array.from(root))
+          .accounts({
+            state: state.publicKey,
+            authority: authority.publicKey,
+          })
+          .signers([authority])
+          .rpc();
+
+        // Act & Assert: Verify both
+        for (let i = 0; i < userIds.length; i++) {
+          const result = await verifyProofAndGetResult(
+            userIds,
+            tokens,
+            amounts,
+            userIds[i],
+            tokens[i],
+            amounts[i],
+          );
+          expect(result).to.be.true;
+        }
+      },
+    );
+
+    (skipTests ? it.skip : it)(
+      'should require exactly 8 decimal places in amount string',
+      async () => {
+        // Arrange: Correct tree with 8 decimals
+        const userIds = ['user@example.com'];
+        const tokens = ['XP'];
+        const correctAmount = '100.00000000';
+
+        const { root } = buildMerkleTree(userIds, tokens, [correctAmount]);
+
+        await program.methods
+          .updateRoot(Array.from(root))
+          .accounts({
+            state: state.publicKey,
+            authority: authority.publicKey,
+          })
+          .signers([authority])
+          .rpc();
+
+        // Act: Test wrong decimal precisions
+        const wrongAmounts = [
+          '100', // No decimals
+          '100.0', // 1 decimal
+          '100.000000', // 6 decimals
+          '100.000000000', // 9 decimals
+        ];
+
+        for (const wrongAmount of wrongAmounts) {
+          const result = await verifyProofAndGetResult(
+            userIds,
+            tokens,
+            [correctAmount],
+            userIds[0],
+            tokens[0],
+            wrongAmount,
+          );
+          expect(result).to.be.false;
+        }
+
+        // Assert: Correct format works
+        const validResult = await verifyProofAndGetResult(
           userIds,
           tokens,
           [correctAmount],
           userIds[0],
           tokens[0],
-          wrongAmount
+          correctAmount,
         );
-        expect(result).to.be.false;
-      }
-
-      // Assert: Correct format works
-      const validResult = await verifyProofAndGetResult(
-        userIds,
-        tokens,
-        [correctAmount],
-        userIds[0],
-        tokens[0],
-        correctAmount
-      );
-      expect(validResult).to.be.true;
-    });
+        expect(validResult).to.be.true;
+      },
+    );
   });
 
   describe('keccak256 Compatibility', () => {
-    (skipTests ? it.skip : it)('should generate same hash as backend/EVM', () => {
-      // Arrange: Known test data
-      const userId = 'user@example.com';
-      const token = 'XP';
-      const amount = '100.00000000';
+    (skipTests ? it.skip : it)(
+      'should generate same hash as backend/EVM',
+      () => {
+        // Arrange: Known test data
+        const userId = 'user@example.com';
+        const token = 'XP';
+        const amount = '100.00000000';
 
-      // Act: Generate leaf hash
-      const leafHash = createLeaf(userId, token, amount);
+        // Act: Generate leaf hash
+        const leafHash = createLeaf(userId, token, amount);
 
-      // Assert: Should match keccak256 of concatenated string
-      const expected = keccak256(Buffer.from(`${userId}:${token}:${amount}`));
-      expect('0x' + leafHash.toString('hex')).to.equal(expected);
-    });
+        // Assert: Should match keccak256 of concatenated string
+        const expected = keccak256(Buffer.from(`${userId}:${token}:${amount}`));
+        expect('0x' + leafHash.toString('hex')).to.equal(expected);
+      },
+    );
 
     (skipTests ? it.skip : it)('should use keccak256, not SHA256', () => {
       // Known test: keccak256("test") != sha256("test")
       const testString = 'test';
       const keccakHash = keccak256(Buffer.from(testString));
-      
+
       // keccak256("test") = 0x9c22ff5f21f0b81b113e63f7db6da94fedef11b2119b4088b89664fb9a3cb658
       // sha256("test")    = 0x9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08
-      
+
       expect(keccakHash).to.equal(
-        '0x9c22ff5f21f0b81b113e63f7db6da94fedef11b2119b4088b89664fb9a3cb658'
+        '0x9c22ff5f21f0b81b113e63f7db6da94fedef11b2119b4088b89664fb9a3cb658',
       );
       expect(keccakHash).not.to.equal(
-        '0x9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08'
+        '0x9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08',
       );
     });
   });
@@ -747,34 +789,37 @@ describe('SVM NikaTreasury Integration (keccak256)', () => {
         .rpc();
     });
 
-    (skipTests ? it.skip : it)('should handle email with special characters', async () => {
-      // Arrange: Email with special chars
-      const userIds = ['user+tag@example.co.uk'];
-      const tokens = ['XP'];
-      const amounts = ['100.00000000'];
+    (skipTests ? it.skip : it)(
+      'should handle email with special characters',
+      async () => {
+        // Arrange: Email with special chars
+        const userIds = ['user+tag@example.co.uk'];
+        const tokens = ['XP'];
+        const amounts = ['100.00000000'];
 
-      const { root } = buildMerkleTree(userIds, tokens, amounts);
+        const { root } = buildMerkleTree(userIds, tokens, amounts);
 
-      await program.methods
-        .updateRoot(Array.from(root))
-        .accounts({
-          state: state.publicKey,
-          authority: authority.publicKey,
-        })
-        .signers([authority])
-        .rpc();
+        await program.methods
+          .updateRoot(Array.from(root))
+          .accounts({
+            state: state.publicKey,
+            authority: authority.publicKey,
+          })
+          .signers([authority])
+          .rpc();
 
-      // Act & Assert
-      const result = await verifyProofAndGetResult(
-        userIds,
-        tokens,
-        amounts,
-        userIds[0],
-        tokens[0],
-        amounts[0]
-      );
-      expect(result).to.be.true;
-    });
+        // Act & Assert
+        const result = await verifyProofAndGetResult(
+          userIds,
+          tokens,
+          amounts,
+          userIds[0],
+          tokens[0],
+          amounts[0],
+        );
+        expect(result).to.be.true;
+      },
+    );
 
     (skipTests ? it.skip : it)('should handle very long user IDs', async () => {
       // Arrange: Very long email
@@ -801,41 +846,43 @@ describe('SVM NikaTreasury Integration (keccak256)', () => {
         amounts,
         userIds[0],
         tokens[0],
-        amounts[0]
+        amounts[0],
       );
       expect(result).to.be.true;
     });
 
-    (skipTests ? it.skip : it)('should handle fractional amounts with 8 decimals', async () => {
-      // Arrange: Various fractional amounts
-      const userIds = ['user1@example.com', 'user2@example.com'];
-      const tokens = ['XP', 'XP'];
-      const amounts = ['0.12345678', '99999.99999999'];
+    (skipTests ? it.skip : it)(
+      'should handle fractional amounts with 8 decimals',
+      async () => {
+        // Arrange: Various fractional amounts
+        const userIds = ['user1@example.com', 'user2@example.com'];
+        const tokens = ['XP', 'XP'];
+        const amounts = ['0.12345678', '99999.99999999'];
 
-      const { root } = buildMerkleTree(userIds, tokens, amounts);
+        const { root } = buildMerkleTree(userIds, tokens, amounts);
 
-      await program.methods
-        .updateRoot(Array.from(root))
-        .accounts({
-          state: state.publicKey,
-          authority: authority.publicKey,
-        })
-        .signers([authority])
-        .rpc();
+        await program.methods
+          .updateRoot(Array.from(root))
+          .accounts({
+            state: state.publicKey,
+            authority: authority.publicKey,
+          })
+          .signers([authority])
+          .rpc();
 
-      // Act & Assert: Both verify correctly
-      for (let i = 0; i < userIds.length; i++) {
-        const result = await verifyProofAndGetResult(
-          userIds,
-          tokens,
-          amounts,
-          userIds[i],
-          tokens[i],
-          amounts[i]
-        );
-        expect(result).to.be.true;
-      }
-    });
+        // Act & Assert: Both verify correctly
+        for (let i = 0; i < userIds.length; i++) {
+          const result = await verifyProofAndGetResult(
+            userIds,
+            tokens,
+            amounts,
+            userIds[i],
+            tokens[i],
+            amounts[i],
+          );
+          expect(result).to.be.true;
+        }
+      },
+    );
   });
 });
-

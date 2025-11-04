@@ -11,16 +11,16 @@ import { PrismaService } from '../prisma/services/prisma.service';
 
 /**
  * Merkle Tree Service Implementation (Infrastructure Layer)
- * 
+ *
  * Implements merkle tree generation for the claimable balances tracking contract.
- * 
+ *
  * How it works:
  * 1. Aggregate all claimable balances by user
  * 2. Create leaf nodes: keccak256(beneficiaryId + token + amount)
  * 3. Build merkle tree from leaves
  * 4. Store root hash (this is what goes on-chain)
  * 5. Users can generate proofs to claim their funds
- * 
+ *
  * NOTE: Uses keccak256 for hashing to match EVM and SVM contracts.
  */
 @Injectable()
@@ -47,7 +47,7 @@ export class MerkleTreeService implements IMerkleTreeService {
 
   generateTree(
     balances: ClaimableBalance[],
-    chain: 'EVM' | 'SVM'
+    chain: 'EVM' | 'SVM',
   ): {
     root: string;
     leaves: Map<string, string>;
@@ -61,13 +61,13 @@ export class MerkleTreeService implements IMerkleTreeService {
     }
 
     // Sort balances by beneficiaryId for deterministic tree construction
-    const sortedBalances = [...balances].sort((a, b) => 
-      a.beneficiaryId.localeCompare(b.beneficiaryId)
+    const sortedBalances = [...balances].sort((a, b) =>
+      a.beneficiaryId.localeCompare(b.beneficiaryId),
     );
 
     // Create leaf nodes
-    const leaves = sortedBalances.map(balance => this.createLeaf(balance));
-    
+    const leaves = sortedBalances.map((balance) => this.createLeaf(balance));
+
     // Build merkle tree
     const tree = new MerkleTree(leaves, this.hashFn, { sortPairs: true });
     const root = tree.getRoot();
@@ -86,25 +86,27 @@ export class MerkleTreeService implements IMerkleTreeService {
 
   generateProof(
     beneficiaryId: string,
-    balances: ClaimableBalance[]
+    balances: ClaimableBalance[],
   ): MerkleProof | null {
     // Find the user's balance
-    const userBalance = balances.find(b => b.beneficiaryId === beneficiaryId);
+    const userBalance = balances.find((b) => b.beneficiaryId === beneficiaryId);
     if (!userBalance) {
       return null;
     }
 
     // Sort balances for deterministic tree
-    const sortedBalances = [...balances].sort((a, b) => 
-      a.beneficiaryId.localeCompare(b.beneficiaryId)
+    const sortedBalances = [...balances].sort((a, b) =>
+      a.beneficiaryId.localeCompare(b.beneficiaryId),
     );
 
     // Create leaves
-    const leaves = sortedBalances.map(balance => this.createLeaf(balance));
+    const leaves = sortedBalances.map((balance) => this.createLeaf(balance));
     const tree = new MerkleTree(leaves, this.hashFn, { sortPairs: true });
 
     // Find user's leaf index
-    const userIndex = sortedBalances.findIndex(b => b.beneficiaryId === beneficiaryId);
+    const userIndex = sortedBalances.findIndex(
+      (b) => b.beneficiaryId === beneficiaryId,
+    );
     if (userIndex === -1) {
       return null;
     }
@@ -116,7 +118,7 @@ export class MerkleTreeService implements IMerkleTreeService {
       beneficiaryId: userBalance.beneficiaryId,
       token: userBalance.token,
       amount: userBalance.totalAmount,
-      proof: proof.map(p => '0x' + p.data.toString('hex')),
+      proof: proof.map((p) => '0x' + p.data.toString('hex')),
       leaf: '0x' + userLeaf.toString('hex'),
     };
   }
@@ -124,14 +126,16 @@ export class MerkleTreeService implements IMerkleTreeService {
   verifyProof(proof: MerkleProof, root: string): boolean {
     // Recreate the leaf
     const leaf = Buffer.from(proof.leaf.slice(2), 'hex');
-    
+
     // Convert proof strings to buffers
-    const proofBuffers = proof.proof.map(p => Buffer.from(p.slice(2), 'hex'));
-    
+    const proofBuffers = proof.proof.map((p) => Buffer.from(p.slice(2), 'hex'));
+
     // Verify against root
     const rootBuffer = Buffer.from(root.slice(2), 'hex');
-    
-    return MerkleTree.verify(proofBuffers, leaf, rootBuffer, this.hashFn, { sortPairs: true });
+
+    return MerkleTree.verify(proofBuffers, leaf, rootBuffer, this.hashFn, {
+      sortPairs: true,
+    });
   }
 
   async storeMerkleRoot(rootData: MerkleRootData): Promise<void> {
@@ -147,7 +151,10 @@ export class MerkleTreeService implements IMerkleTreeService {
     });
   }
 
-  async getLatestRoot(chain: 'EVM' | 'SVM', token: string): Promise<MerkleRootData | null> {
+  async getLatestRoot(
+    chain: 'EVM' | 'SVM',
+    token: string,
+  ): Promise<MerkleRootData | null> {
     const root = await this.prisma.merkleRoot.findFirst({
       where: { chain, token },
       orderBy: { version: 'desc' },
@@ -171,17 +178,20 @@ export class MerkleTreeService implements IMerkleTreeService {
    * Generates and stores a new merkle root from current claimable balances.
    * This should be called periodically or after significant balance changes.
    */
-  async generateAndStoreRoot(chain: 'EVM' | 'SVM', token: string): Promise<MerkleRootData> {
+  async generateAndStoreRoot(
+    chain: 'EVM' | 'SVM',
+    token: string,
+  ): Promise<MerkleRootData> {
     // Get all claimable balances for this chain/token
     const balances = await this.getClaimableBalances(chain, token);
-    
+
     // Generate merkle tree
     const { root } = this.generateTree(balances, chain);
-    
+
     // Get next version number
     const latestRoot = await this.getLatestRoot(chain, token);
     const version = (latestRoot?.version ?? 0) + 1;
-    
+
     // Store root
     const rootData: MerkleRootData = {
       chain,
@@ -191,21 +201,26 @@ export class MerkleTreeService implements IMerkleTreeService {
       leafCount: balances.length,
       createdAt: new Date(),
     };
-    
+
     await this.storeMerkleRoot(rootData);
-    
+
     return rootData;
   }
 
   /**
    * Gets all UNCLAIMED balances from the ledger
-   * 
+   *
    * CRITICAL: This must exclude already-claimed entries to prevent double-spending!
    * We calculate: Unclaimed = Total Earned - Total Claimed
    */
-  private async getClaimableBalances(chain: 'EVM' | 'SVM', token: string): Promise<ClaimableBalance[]> {
+  private async getClaimableBalances(
+    chain: 'EVM' | 'SVM',
+    token: string,
+  ): Promise<ClaimableBalance[]> {
     // Get total earned per user from ledger (filtered by chain via join with Trade table)
-    const earnedResults = await this.prisma.$queryRaw<Array<{ beneficiaryId: string; totalEarned: string }>>`
+    const earnedResults = await this.prisma.$queryRaw<
+      Array<{ beneficiaryId: string; totalEarned: string }>
+    >`
       SELECT 
         l."beneficiaryId",
         SUM(l.amount)::text as "totalEarned"
@@ -219,7 +234,9 @@ export class MerkleTreeService implements IMerkleTreeService {
     `;
 
     // Get total claimed per user from claim records
-    const claimedResults = await this.prisma.$queryRaw<Array<{ userId: string; totalClaimed: string }>>`
+    const claimedResults = await this.prisma.$queryRaw<
+      Array<{ userId: string; totalClaimed: string }>
+    >`
       SELECT 
         "userId",
         SUM(amount)::text as "totalClaimed"
@@ -254,4 +271,3 @@ export class MerkleTreeService implements IMerkleTreeService {
     return results;
   }
 }
-

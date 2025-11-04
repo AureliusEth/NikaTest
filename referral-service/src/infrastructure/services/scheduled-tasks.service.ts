@@ -7,7 +7,7 @@ import { getContractAddressForChain } from '../../common/chain-constants';
 
 /**
  * Scheduled Tasks Service
- * 
+ *
  * Handles periodic tasks:
  * - Merkle root generation and updates
  * - Treasury balance synchronization
@@ -37,29 +37,32 @@ export class ScheduledTasksService {
       for (const token of tokens) {
         try {
           this.logger.log(`Generating merkle root for ${chain}/${token}...`);
-          
+
           // Generate new root
-          const rootData = await this.merkleService.generateAndStoreRoot(chain, token);
-          
+          const rootData = await this.merkleService.generateAndStoreRoot(
+            chain,
+            token,
+          );
+
           this.logger.log(
-            `Generated merkle root v${rootData.version} for ${chain}/${token}: ${rootData.root}`
+            `Generated merkle root v${rootData.version} for ${chain}/${token}: ${rootData.root}`,
           );
 
           // Auto-update on-chain if configured
           const autoUpdate = process.env.AUTO_UPDATE_MERKLE_ROOTS === 'true';
-          
+
           if (autoUpdate) {
             await this.updateMerkleRootOnChain(chain, token, rootData.root);
           } else {
             this.logger.log(
               `Skipping on-chain update (set AUTO_UPDATE_MERKLE_ROOTS=true to enable). ` +
-              `Manual update required at: ${getContractAddressForChain(chain, token as 'XP' | 'USDC')}`
+                `Manual update required at: ${getContractAddressForChain(chain, token as 'XP' | 'USDC')}`,
             );
           }
         } catch (error: any) {
           this.logger.error(
             `Failed to update merkle root for ${chain}/${token}: ${error.message}`,
-            error.stack
+            error.stack,
           );
         }
       }
@@ -74,10 +77,13 @@ export class ScheduledTasksService {
   private async updateMerkleRootOnChain(
     chain: 'EVM' | 'SVM',
     token: string,
-    root: string
+    root: string,
   ): Promise<void> {
-    const contractAddress = getContractAddressForChain(chain, token as 'XP' | 'USDC');
-    
+    const contractAddress = getContractAddressForChain(
+      chain,
+      token as 'XP' | 'USDC',
+    );
+
     if (contractAddress === 'NOT_CONFIGURED') {
       this.logger.warn(`Contract address not configured for ${chain}/${token}`);
       return;
@@ -101,14 +107,13 @@ export class ScheduledTasksService {
       }
 
       this.logger.log(
-        `Successfully updated merkle root on-chain for ${chain}/${token}: ${txHash}`
+        `Successfully updated merkle root on-chain for ${chain}/${token}: ${txHash}`,
       );
     } catch (error: any) {
       this.logger.error(
         `Failed to update merkle root on-chain for ${chain}/${token}: ${error.message}`,
-        error.stack
+        error.stack,
       );
     }
   }
 }
-

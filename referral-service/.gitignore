@@ -3,3 +3,19 @@ node_modules
 .env
 
 /generated/prisma
+
+# Build artifacts
+dist/
+*.log
+server.log
+
+# Test coverage
+coverage/
+tests/coverage/
+
+# IDE files
+.DS_Store
+*.swp
+*.swo
+.vscode/
+.idea/

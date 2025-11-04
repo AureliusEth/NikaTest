@@ -15,11 +15,17 @@ describe('API E2E Tests', () => {
     }).compile();
 
     app = moduleFixture.createNestApplication();
-    app.useGlobalPipes(new ValidationPipe({ whitelist: true, forbidNonWhitelisted: true, transform: true }));
+    app.useGlobalPipes(
+      new ValidationPipe({
+        whitelist: true,
+        forbidNonWhitelisted: true,
+        transform: true,
+      }),
+    );
     app.useGlobalFilters(new HttpExceptionFilter());
-    
+
     prisma = app.get<PrismaService>(PrismaService);
-    
+
     await app.init();
   });
 
@@ -493,4 +499,3 @@ describe('API E2E Tests', () => {
     });
   });
 });
-

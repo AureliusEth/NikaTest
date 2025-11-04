@@ -23,14 +23,14 @@ export interface CommissionContext {
 
 /**
  * CommissionPolicy Interface (Domain Layer)
- * 
+ *
  * Defines the contract for calculating commission splits.
  * This allows different commission structures (e.g., standard, KOL, VIP).
- * 
+ *
  * SQE Fee Bundling:
  * - Treasury: Remaining fee after cashback + commissions (goes to Nika treasury)
  * - Claimable: Cashback + commissions (goes to merkle root smart contract)
- * 
+ *
  * Implementations live in the infrastructure layer.
  */
 export interface CommissionPolicy {
@@ -42,7 +42,3 @@ export interface CommissionPolicy {
    */
   calculateSplits(tradeFee: number, ctx: CommissionContext): Split[];
 }
-
-
-
-

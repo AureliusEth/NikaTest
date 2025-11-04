@@ -26,5 +26,3 @@ import { PrismaTradesRepository } from './repositories/trade.repository.prisma';
   ],
 })
 export class PrismaModule {}
-
-

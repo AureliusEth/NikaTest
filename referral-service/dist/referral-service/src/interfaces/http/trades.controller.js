@@ -28,7 +28,7 @@ let TradesController = TradesController_1 = class TradesController {
         this.logger.debug('Received trade request', {
             bodyUserId: body.userId,
             reqUserId: req.user?.id,
-            sessionCookie: req.cookies?.session ? 'present' : 'missing'
+            sessionCookie: req.cookies?.session ? 'present' : 'missing',
         });
         const userId = body.userId || req.user?.id;
         this.logger.debug(`Using userId: ${userId}`);
@@ -40,7 +40,7 @@ let TradesController = TradesController_1 = class TradesController {
             userId,
             feeAmount: body.feeAmount,
             token: body.token,
-            chain: body.chain
+            chain: body.chain,
         });
         return { ok: true };
     }

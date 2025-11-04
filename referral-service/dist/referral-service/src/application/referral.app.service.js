@@ -57,12 +57,12 @@ let ReferralAppService = class ReferralAppService {
             return this.refRepo.getDirectReferees(userId);
         if (level === 2) {
             const l1 = await this.refRepo.getDirectReferees(userId);
-            const all = await Promise.all(l1.map(u => this.refRepo.getDirectReferees(u)));
+            const all = await Promise.all(l1.map((u) => this.refRepo.getDirectReferees(u)));
             return all.flat();
         }
         if (level === 3) {
             const l2 = await this.findRefereesAtLevel(userId, 2);
-            const all = await Promise.all(l2.map(u => this.refRepo.getDirectReferees(u)));
+            const all = await Promise.all(l2.map((u) => this.refRepo.getDirectReferees(u)));
             return all.flat();
         }
         return [];
@@ -79,7 +79,7 @@ let ReferralAppService = class ReferralAppService {
         });
         const totalClaimed = Number(claimed._sum.amount || 0);
         const unclaimedXP = earnings.total - totalClaimed;
-        const referrals = refereeEarnings.map(r => ({
+        const referrals = refereeEarnings.map((r) => ({
             userId: r.refereeId,
             level: r.level,
             totalEarned: r.totalEarned,

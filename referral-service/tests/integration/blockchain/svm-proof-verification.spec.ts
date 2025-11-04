@@ -40,14 +40,14 @@ import { keccak256 } from 'ethers';
 
 /**
  * SVM Proof Verification Tests with keccak256
- * 
+ *
  * Tests cover:
  * 1. keccak256 hashing matches backend and contract
  * 2. Root updates with keccak256
  * 3. Proof verification with single leaf (proofLen=0)
  * 4. Proof verification with multiple leaves
  * 5. Invalid proof detection
- * 
+ *
  * NOTE: These tests are skipped because:
  * - They cause module isolation issues when run with other tests
  * - We have comprehensive Solana tests in contracts/svm/nika-treasury/tests that are passing
@@ -119,7 +119,9 @@ describe.skip('SVM Proof Verification with keccak256', () => {
       },
       provider: mockProvider,
       programId: {
-        toString: jest.fn().mockReturnValue('EkEP6vRisXSE4TSBDvr8FcpzZgSaYeVKc9uRdFpnXQVB'),
+        toString: jest
+          .fn()
+          .mockReturnValue('EkEP6vRisXSE4TSBDvr8FcpzZgSaYeVKc9uRdFpnXQVB'),
       },
     };
 
@@ -145,7 +147,10 @@ describe.skip('SVM Proof Verification with keccak256', () => {
     // Setup environment
     process.env.SVM_RPC_URL = 'https://api.devnet.solana.com';
     process.env.SVM_PRIVATE_KEY = JSON.stringify([1, 2, 3, 4]);
-    process.env.SVM_STATE_KEYPAIR_PATH = path.join(__dirname, '../../test-fixtures/state-keypair.json');
+    process.env.SVM_STATE_KEYPAIR_PATH = path.join(
+      __dirname,
+      '../../test-fixtures/state-keypair.json',
+    );
   });
 
   afterEach(() => {
@@ -160,37 +165,41 @@ describe.skip('SVM Proof Verification with keccak256', () => {
       const userId = 'MATTHEWPINNOCK.MP@GMAIL.COM';
       const token = 'XP';
       const amount = '1821.30000000';
-      
+
       const data = `${userId}:${token}:${amount}`;
       const hash = keccak256(Buffer.from(data));
-      
+
       // Should be a valid keccak256 hash (66 chars: 0x + 64 hex)
       expect(hash).toMatch(/^0x[0-9a-f]{64}$/i);
-      
+
       // Verify it's keccak256 (not SHA256)
       // keccak256("test") = 0x9c22ff5f21f0b81b113e63f7db6da94fedef11b2119b4088b89664cb9a2cb268
       // sha256("test") = 0x9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08
       const testHash = keccak256(Buffer.from('test'));
-      expect(testHash).toBe('0x9c22ff5f21f0b81b113e63f7db6da94fedef11b2119b4088b89664cb9a2cb268');
+      expect(testHash).toBe(
+        '0x9c22ff5f21f0b81b113e63f7db6da94fedef11b2119b4088b89664cb9a2cb268',
+      );
     });
 
     it('should generate merkle tree root using keccak256', () => {
       const module = await Test.createTestingModule({
         providers: [PrismaService, MerkleTreeService],
       }).compile();
-      
+
       merkleService = module.get<MerkleTreeService>(MerkleTreeService);
-      
+
       const balances = [
         { beneficiaryId: 'USER_A', token: 'XP', totalAmount: 100.5 },
         { beneficiaryId: 'USER_B', token: 'XP', totalAmount: 200.75 },
       ];
-      
+
       const { root } = merkleService.generateTree(balances, 'SVM');
-      
+
       // Root should be keccak256 hash
       expect(root).toMatch(/^0x[0-9a-f]{64}$/i);
-      expect(root).not.toBe('0x0000000000000000000000000000000000000000000000000000000000000000');
+      expect(root).not.toBe(
+        '0x0000000000000000000000000000000000000000000000000000000000000000',
+      );
     });
   });
 
@@ -203,20 +212,30 @@ describe.skip('SVM Proof Verification with keccak256', () => {
       // Arrange: Create test state keypair
       const testStateKeypair = Keypair.generate();
       const testStateAddress = testStateKeypair.publicKey.toString();
-      const testKeypairPath = path.join(__dirname, '../../test-fixtures/state-keypair.json');
-      
+      const testKeypairPath = path.join(
+        __dirname,
+        '../../test-fixtures/state-keypair.json',
+      );
+
       const dir = path.dirname(testKeypairPath);
       if (!fs.existsSync(dir)) {
         fs.mkdirSync(dir, { recursive: true });
       }
-      fs.writeFileSync(testKeypairPath, JSON.stringify(Array.from(testStateKeypair.secretKey)));
+      fs.writeFileSync(
+        testKeypairPath,
+        JSON.stringify(Array.from(testStateKeypair.secretKey)),
+      );
 
       process.env.SVM_STATE_KEYPAIR_PATH = testKeypairPath;
-      process.env.SVM_XP_CONTRACT_ADDRESS = 'EkEP6vRisXSE4TSBDvr8FcpzZgSaYeVKc9uRdFpnXQVB';
+      process.env.SVM_XP_CONTRACT_ADDRESS =
+        'EkEP6vRisXSE4TSBDvr8FcpzZgSaYeVKc9uRdFpnXQVB';
 
       // Initialize services
       svmService = new SvmBlockchainService();
-      svmService.initialize(process.env.SVM_RPC_URL!, process.env.SVM_PRIVATE_KEY);
+      svmService.initialize(
+        process.env.SVM_RPC_URL!,
+        process.env.SVM_PRIVATE_KEY,
+      );
 
       const module = Test.createTestingModule({
         providers: [PrismaService, MerkleTreeService],
@@ -225,10 +244,17 @@ describe.skip('SVM Proof Verification with keccak256', () => {
 
       // Generate merkle tree with single leaf
       const balances = [
-        { beneficiaryId: 'MATTHEWPINNOCK.MP@GMAIL.COM', token: 'XP', totalAmount: 1821.3 },
+        {
+          beneficiaryId: 'MATTHEWPINNOCK.MP@GMAIL.COM',
+          token: 'XP',
+          totalAmount: 1821.3,
+        },
       ];
       const { root } = merkleService.generateTree(balances, 'SVM');
-      const proof = merkleService.generateProof('MATTHEWPINNOCK.MP@GMAIL.COM', balances);
+      const proof = merkleService.generateProof(
+        'MATTHEWPINNOCK.MP@GMAIL.COM',
+        balances,
+      );
 
       expect(proof).not.toBeNull();
       expect(proof!.proof.length).toBe(0); // Single leaf = empty proof array
@@ -243,19 +269,25 @@ describe.skip('SVM Proof Verification with keccak256', () => {
           return Promise.resolve({
             merkleRoot: new Array(32).fill(0),
             version: 0,
-            authority: { toString: jest.fn().mockReturnValue('MockWalletAddress123') },
+            authority: {
+              toString: jest.fn().mockReturnValue('MockWalletAddress123'),
+            },
           });
         } else if (fetchCallCount === 2) {
           return Promise.resolve({
             merkleRoot: Array.from(rootBytes),
             version: 1,
-            authority: { toString: jest.fn().mockReturnValue('MockWalletAddress123') },
+            authority: {
+              toString: jest.fn().mockReturnValue('MockWalletAddress123'),
+            },
           });
         }
         return Promise.resolve({
           merkleRoot: Array.from(rootBytes),
           version: 1,
-          authority: { toString: jest.fn().mockReturnValue('MockWalletAddress123') },
+          authority: {
+            toString: jest.fn().mockReturnValue('MockWalletAddress123'),
+          },
         });
       });
 
@@ -265,13 +297,15 @@ describe.skip('SVM Proof Verification with keccak256', () => {
         simulate: jest.fn().mockResolvedValue({ value: { err: null } }),
         rpc: jest.fn().mockResolvedValue('MockTxHash123'),
       };
-      mockProgram.methods.updateRoot = jest.fn().mockReturnValue(updateRootMock);
+      mockProgram.methods.updateRoot = jest
+        .fn()
+        .mockReturnValue(updateRootMock);
 
       // Act 1: Update root
       const txPromise = svmService.updateMerkleRoot(testStateAddress, root);
       jest.advanceTimersByTime(1000);
       const txHash = await txPromise;
-      
+
       expect(txHash).toBe('MockTxHash123');
 
       // Mock verifyProof to return events array with proofVerified event (matches actual Anchor format)
@@ -291,7 +325,9 @@ describe.skip('SVM Proof Verification with keccak256', () => {
           ],
         }),
       };
-      mockProgram.methods.verifyProof = jest.fn().mockReturnValue(verifyProofMock);
+      mockProgram.methods.verifyProof = jest
+        .fn()
+        .mockReturnValue(verifyProofMock);
 
       // Act 2: Verify proof (should succeed even with proofLen=0)
       const isValid = await svmService.verifyProof(
@@ -299,7 +335,7 @@ describe.skip('SVM Proof Verification with keccak256', () => {
         proof!.proof,
         proof!.beneficiaryId,
         proof!.token,
-        proof!.amount.toFixed(8)
+        proof!.amount.toFixed(8),
       );
 
       // Assert: Proof should be valid
@@ -308,7 +344,7 @@ describe.skip('SVM Proof Verification with keccak256', () => {
         proof!.beneficiaryId,
         proof!.token,
         proof!.amount.toFixed(8),
-        expect.any(Array) // proofBytes array
+        expect.any(Array), // proofBytes array
       );
       expect(verifyProofMock.accounts).toHaveBeenCalledWith({
         state: expect.any(Object),
@@ -324,19 +360,29 @@ describe.skip('SVM Proof Verification with keccak256', () => {
       // Arrange
       const testStateKeypair = Keypair.generate();
       const testStateAddress = testStateKeypair.publicKey.toString();
-      const testKeypairPath = path.join(__dirname, '../../test-fixtures/state-keypair.json');
-      
+      const testKeypairPath = path.join(
+        __dirname,
+        '../../test-fixtures/state-keypair.json',
+      );
+
       const dir = path.dirname(testKeypairPath);
       if (!fs.existsSync(dir)) {
         fs.mkdirSync(dir, { recursive: true });
       }
-      fs.writeFileSync(testKeypairPath, JSON.stringify(Array.from(testStateKeypair.secretKey)));
+      fs.writeFileSync(
+        testKeypairPath,
+        JSON.stringify(Array.from(testStateKeypair.secretKey)),
+      );
 
       process.env.SVM_STATE_KEYPAIR_PATH = testKeypairPath;
-      process.env.SVM_XP_CONTRACT_ADDRESS = 'EkEP6vRisXSE4TSBDvr8FcpzZgSaYeVKc9uRdFpnXQVB';
+      process.env.SVM_XP_CONTRACT_ADDRESS =
+        'EkEP6vRisXSE4TSBDvr8FcpzZgSaYeVKc9uRdFpnXQVB';
 
       svmService = new SvmBlockchainService();
-      svmService.initialize(process.env.SVM_RPC_URL!, process.env.SVM_PRIVATE_KEY);
+      svmService.initialize(
+        process.env.SVM_RPC_URL!,
+        process.env.SVM_PRIVATE_KEY,
+      );
 
       const module = Test.createTestingModule({
         providers: [PrismaService, MerkleTreeService],
@@ -360,7 +406,9 @@ describe.skip('SVM Proof Verification with keccak256', () => {
       mockProgram.account.state.fetch = jest.fn().mockResolvedValue({
         merkleRoot: Array.from(rootBytes),
         version: 1,
-        authority: { toString: jest.fn().mockReturnValue('MockWalletAddress123') },
+        authority: {
+          toString: jest.fn().mockReturnValue('MockWalletAddress123'),
+        },
       });
 
       // Mock verifyProof with events array format
@@ -380,7 +428,9 @@ describe.skip('SVM Proof Verification with keccak256', () => {
           ],
         }),
       };
-      mockProgram.methods.verifyProof = jest.fn().mockReturnValue(verifyProofMock);
+      mockProgram.methods.verifyProof = jest
+        .fn()
+        .mockReturnValue(verifyProofMock);
 
       // Act: Verify proof
       const isValid = await svmService.verifyProof(
@@ -388,7 +438,7 @@ describe.skip('SVM Proof Verification with keccak256', () => {
         proof!.proof,
         proof!.beneficiaryId,
         proof!.token,
-        proof!.amount.toFixed(8)
+        proof!.amount.toFixed(8),
       );
 
       // Assert
@@ -405,26 +455,38 @@ describe.skip('SVM Proof Verification with keccak256', () => {
       // Arrange
       const testStateKeypair = Keypair.generate();
       const testStateAddress = testStateKeypair.publicKey.toString();
-      const testKeypairPath = path.join(__dirname, '../../test-fixtures/state-keypair.json');
-      
+      const testKeypairPath = path.join(
+        __dirname,
+        '../../test-fixtures/state-keypair.json',
+      );
+
       const dir = path.dirname(testKeypairPath);
       if (!fs.existsSync(dir)) {
         fs.mkdirSync(dir, { recursive: true });
       }
-      fs.writeFileSync(testKeypairPath, JSON.stringify(Array.from(testStateKeypair.secretKey)));
+      fs.writeFileSync(
+        testKeypairPath,
+        JSON.stringify(Array.from(testStateKeypair.secretKey)),
+      );
 
       process.env.SVM_STATE_KEYPAIR_PATH = testKeypairPath;
-      process.env.SVM_XP_CONTRACT_ADDRESS = 'EkEP6vRisXSE4TSBDvr8FcpzZgSaYeVKc9uRdFpnXQVB';
+      process.env.SVM_XP_CONTRACT_ADDRESS =
+        'EkEP6vRisXSE4TSBDvr8FcpzZgSaYeVKc9uRdFpnXQVB';
 
       svmService = new SvmBlockchainService();
-      svmService.initialize(process.env.SVM_RPC_URL!, process.env.SVM_PRIVATE_KEY);
+      svmService.initialize(
+        process.env.SVM_RPC_URL!,
+        process.env.SVM_PRIVATE_KEY,
+      );
 
       // Mock state account with different root
       const wrongRootBytes = Buffer.from('a'.repeat(64), 'hex');
       mockProgram.account.state.fetch = jest.fn().mockResolvedValue({
         merkleRoot: Array.from(wrongRootBytes),
         version: 1,
-        authority: { toString: jest.fn().mockReturnValue('MockWalletAddress123') },
+        authority: {
+          toString: jest.fn().mockReturnValue('MockWalletAddress123'),
+        },
       });
 
       // Mock verifyProof to return false (invalid proof) via events
@@ -444,7 +506,9 @@ describe.skip('SVM Proof Verification with keccak256', () => {
           ],
         }),
       };
-      mockProgram.methods.verifyProof = jest.fn().mockReturnValue(verifyProofMock);
+      mockProgram.methods.verifyProof = jest
+        .fn()
+        .mockReturnValue(verifyProofMock);
 
       // Act: Verify proof with wrong data
       const isValid = await svmService.verifyProof(
@@ -452,13 +516,13 @@ describe.skip('SVM Proof Verification with keccak256', () => {
         ['0xabcd1234', '0x5678ef90'],
         'WRONG_USER',
         'XP',
-        '999.99999999'
+        '999.99999999',
       );
 
       // Assert
       expect(isValid).toBe(false);
       expect(Logger.prototype.warn).toHaveBeenCalledWith(
-        expect.stringContaining('SVM proof invalid')
+        expect.stringContaining('SVM proof invalid'),
       );
 
       // Cleanup
@@ -471,29 +535,41 @@ describe.skip('SVM Proof Verification with keccak256', () => {
       // Arrange
       const testStateKeypair = Keypair.generate();
       const testStateAddress = testStateKeypair.publicKey.toString();
-      const testKeypairPath = path.join(__dirname, '../../test-fixtures/state-keypair.json');
-      
+      const testKeypairPath = path.join(
+        __dirname,
+        '../../test-fixtures/state-keypair.json',
+      );
+
       const dir = path.dirname(testKeypairPath);
       if (!fs.existsSync(dir)) {
         fs.mkdirSync(dir, { recursive: true });
       }
-      fs.writeFileSync(testKeypairPath, JSON.stringify(Array.from(testStateKeypair.secretKey)));
+      fs.writeFileSync(
+        testKeypairPath,
+        JSON.stringify(Array.from(testStateKeypair.secretKey)),
+      );
 
       process.env.SVM_STATE_KEYPAIR_PATH = testKeypairPath;
-      process.env.SVM_XP_CONTRACT_ADDRESS = 'EkEP6vRisXSE4TSBDvr8FcpzZgSaYeVKc9uRdFpnXQVB';
+      process.env.SVM_XP_CONTRACT_ADDRESS =
+        'EkEP6vRisXSE4TSBDvr8FcpzZgSaYeVKc9uRdFpnXQVB';
 
       svmService = new SvmBlockchainService();
-      svmService.initialize(process.env.SVM_RPC_URL!, process.env.SVM_PRIVATE_KEY);
+      svmService.initialize(
+        process.env.SVM_RPC_URL!,
+        process.env.SVM_PRIVATE_KEY,
+      );
 
       const rootBytes = Buffer.from('b'.repeat(64), 'hex');
       mockProgram.account.state.fetch = jest.fn().mockResolvedValue({
         merkleRoot: Array.from(rootBytes),
         version: 1,
-        authority: { toString: jest.fn().mockReturnValue('MockWalletAddress123') },
+        authority: {
+          toString: jest.fn().mockReturnValue('MockWalletAddress123'),
+        },
       });
 
       // Test case 1: events array format (current Anchor format)
-      let verifyProofMock1 = {
+      const verifyProofMock1 = {
         accounts: jest.fn().mockReturnThis(),
         simulate: jest.fn().mockResolvedValue({
           events: [
@@ -509,30 +585,34 @@ describe.skip('SVM Proof Verification with keccak256', () => {
           ],
         }),
       };
-      mockProgram.methods.verifyProof = jest.fn().mockReturnValue(verifyProofMock1);
-      
+      mockProgram.methods.verifyProof = jest
+        .fn()
+        .mockReturnValue(verifyProofMock1);
+
       const isValid1 = await svmService.verifyProof(
         testStateAddress,
         [],
         'USER_A',
         'XP',
-        '100.00000000'
+        '100.00000000',
       );
       expect(isValid1).toBe(true);
 
       // Test case 2: sim.value is boolean (fallback for older Anchor versions)
-      let verifyProofMock2 = {
+      const verifyProofMock2 = {
         accounts: jest.fn().mockReturnThis(),
         simulate: jest.fn().mockResolvedValue({ value: true }),
       };
-      mockProgram.methods.verifyProof = jest.fn().mockReturnValue(verifyProofMock2);
-      
+      mockProgram.methods.verifyProof = jest
+        .fn()
+        .mockReturnValue(verifyProofMock2);
+
       const isValid2 = await svmService.verifyProof(
         testStateAddress,
         [],
         'USER_B',
         'XP',
-        '200.00000000'
+        '200.00000000',
       );
       expect(isValid2).toBe(true);
 
@@ -543,4 +623,3 @@ describe.skip('SVM Proof Verification with keccak256', () => {
     });
   });
 });
-

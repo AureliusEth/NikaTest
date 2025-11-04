@@ -1,23 +1,23 @@
 /**
  * Commission Policy Tests
- * 
+ *
  * PURPOSE:
  * Tests how trade fees are split between cashback, referral commissions, and treasury.
  * This is the core economic model of the referral system.
- * 
+ *
  * BUSINESS RULES:
  * - Cashback (Level 0): User-specific rate (default 10% of fee)
  * - Level 1 (direct referrer): 30% of fee
  * - Level 2 (referrer's referrer): 3% of fee
  * - Level 3 (L2's referrer): 2% of fee
  * - Treasury: Remainder (~55% when all levels present)
- * 
+ *
  * EDGE CASES:
  * - Users with no referrer: Only cashback + treasury
  * - Users with partial referral chains (1-2 levels): Remaining % goes to treasury
  * - Zero cashback rate users: More goes to treasury
  * - Maximum 3-level referral chain depth
- * 
+ *
  * INTEGRATION:
  * - DefaultPolicy implements the CommissionPolicy interface
  * - Used by CommissionService during trade processing
@@ -102,8 +102,8 @@ describe('Commission Policy', () => {
       // Assert: Percentages remain constant
       expect(splits.find((s) => s.level === 0)!.amount).toBeCloseTo(100); // 10%
       expect(splits.find((s) => s.level === 1)!.amount).toBeCloseTo(300); // 30%
-      expect(splits.find((s) => s.level === 2)!.amount).toBeCloseTo(30);  // 3%
-      expect(splits.find((s) => s.level === 3)!.amount).toBeCloseTo(20);  // 2%
+      expect(splits.find((s) => s.level === 2)!.amount).toBeCloseTo(30); // 3%
+      expect(splits.find((s) => s.level === 3)!.amount).toBeCloseTo(20); // 2%
     });
   });
 
@@ -127,7 +127,7 @@ describe('Commission Policy', () => {
       expect(splits.find((s) => s.level === 1)!.amount).toBeCloseTo(30);
       expect(splits.find((s) => s.level === 2)).toBeUndefined();
       expect(splits.find((s) => s.level === 3)).toBeUndefined();
-      
+
       // Treasury gets remainder: 60 XP
       expect(splits.find((s) => s.level === -1)!.amount).toBeCloseTo(60);
     });
@@ -151,7 +151,7 @@ describe('Commission Policy', () => {
       expect(splits.find((s) => s.level === 1)!.amount).toBeCloseTo(30);
       expect(splits.find((s) => s.level === 2)!.amount).toBeCloseTo(3);
       expect(splits.find((s) => s.level === 3)).toBeUndefined();
-      
+
       // Treasury gets remainder: 57 XP
       expect(splits.find((s) => s.level === -1)!.amount).toBeCloseTo(57);
     });
@@ -172,8 +172,10 @@ describe('Commission Policy', () => {
       // Assert: Cashback + treasury
       expect(splits).toHaveLength(2);
       expect(splits.find((s) => s.level === 0)!.amount).toBeCloseTo(10);
-      expect(splits.find((s) => s.level === 0)!.beneficiaryId).toBe('solo-trader');
-      
+      expect(splits.find((s) => s.level === 0)!.beneficiaryId).toBe(
+        'solo-trader',
+      );
+
       // Treasury gets remainder: 90 XP
       expect(splits.find((s) => s.level === -1)!.amount).toBeCloseTo(90);
     });
@@ -197,7 +199,7 @@ describe('Commission Policy', () => {
       expect(splits).toHaveLength(2);
       expect(splits.find((s) => s.level === 1)!.amount).toBeCloseTo(30);
       expect(splits.find((s) => s.level === 0)).toBeUndefined(); // No cashback
-      
+
       // Treasury gets remainder: 70 XP
       expect(splits.find((s) => s.level === -1)!.amount).toBeCloseTo(70);
     });
@@ -219,7 +221,7 @@ describe('Commission Policy', () => {
       expect(splits).toHaveLength(3);
       expect(splits.find((s) => s.level === 0)!.amount).toBeCloseTo(20);
       expect(splits.find((s) => s.level === 1)!.amount).toBeCloseTo(30);
-      
+
       // Treasury gets remainder: 50 XP
       expect(splits.find((s) => s.level === -1)!.amount).toBeCloseTo(50);
     });
@@ -241,7 +243,7 @@ describe('Commission Policy', () => {
 
       // Assert: Same percentage splits + treasury
       expect(splits).toHaveLength(3);
-      expect(splits.find((s) => s.level === 0)!.amount).toBeCloseTo(5.05);  // 10%
+      expect(splits.find((s) => s.level === 0)!.amount).toBeCloseTo(5.05); // 10%
       expect(splits.find((s) => s.level === 1)!.amount).toBeCloseTo(15.15); // 30%
       expect(splits.find((s) => s.level === -1)!.amount).toBeCloseTo(30.3); // ~60% treasury
       expect(splits[0].token).toBe('USDC');
@@ -286,11 +288,11 @@ describe('Commission Policy', () => {
       // Assert: Claimable splits have 'claimable' destination, treasury has 'treasury'
       const claimableSplits = splits.filter((s) => s.level >= 0);
       const treasurySplits = splits.filter((s) => s.level === -1);
-      
+
       claimableSplits.forEach((split) => {
         expect(split.destination).toBe('claimable');
       });
-      
+
       treasurySplits.forEach((split) => {
         expect(split.destination).toBe('treasury');
         expect(split.beneficiaryId).toBe('NIKA_TREASURY');
@@ -313,11 +315,10 @@ describe('Commission Policy', () => {
       const splits = policy.calculateSplits(fee, context);
 
       // Assert: Correct fractional calculations
-      expect(splits.find((s) => s.level === 0)!.amount).toBeCloseTo(3.333, 2);  // 10%
-      expect(splits.find((s) => s.level === 1)!.amount).toBeCloseTo(9.999, 2);  // 30%
+      expect(splits.find((s) => s.level === 0)!.amount).toBeCloseTo(3.333, 2); // 10%
+      expect(splits.find((s) => s.level === 1)!.amount).toBeCloseTo(9.999, 2); // 30%
       expect(splits.find((s) => s.level === 2)!.amount).toBeCloseTo(0.9999, 2); // 3%
       expect(splits.find((s) => s.level === 3)!.amount).toBeCloseTo(0.6666, 2); // 2%
     });
   });
 });
-

@@ -20,7 +20,13 @@ import { SessionAuthGuard } from '../../common/guards/session-auth.guard';
 
 @Module({
   imports: [PrismaModule, BlockchainModule],
-  controllers: [ReferralController, TradesController, UserController, AuthController, MerkleController],
+  controllers: [
+    ReferralController,
+    TradesController,
+    UserController,
+    AuthController,
+    MerkleController,
+  ],
   providers: [
     ReferralAppService,
     TradesAppService,
@@ -38,8 +44,11 @@ import { SessionAuthGuard } from '../../common/guards/session-auth.guard';
     AuthService,
     SessionAuthGuard,
   ],
-  exports: [ReferralAppService, TradesAppService, AuthService, MerkleTreeService],
+  exports: [
+    ReferralAppService,
+    TradesAppService,
+    AuthService,
+    MerkleTreeService,
+  ],
 })
 export class ReferralModule {}
-
-

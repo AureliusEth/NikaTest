@@ -18,7 +18,10 @@ let PrismaIdempotencyStore = class PrismaIdempotencyStore {
         this.prisma = prisma;
     }
     async exists(key) {
-        const found = await this.prisma.idempotencyKey.findUnique({ where: { key }, select: { key: true } });
+        const found = await this.prisma.idempotencyKey.findUnique({
+            where: { key },
+            select: { key: true },
+        });
         return !!found;
     }
     async put(key) {

@@ -21,7 +21,9 @@ let PrismaReferralRepository = class PrismaReferralRepository {
         const ancestors = [];
         let current = userId;
         while (ancestors.length < maxLevels) {
-            const link = await this.prisma.referralLink.findUnique({ where: { refereeId: current } });
+            const link = await this.prisma.referralLink.findUnique({
+                where: { refereeId: current },
+            });
             if (!link)
                 break;
             ancestors.push(link.referrerId);
@@ -30,15 +32,23 @@ let PrismaReferralRepository = class PrismaReferralRepository {
         return ancestors;
     }
     async hasReferrer(userId) {
-        const link = await this.prisma.referralLink.findUnique({ where: { refereeId: userId }, select: { refereeId: true } });
+        const link = await this.prisma.referralLink.findUnique({
+            where: { refereeId: userId },
+            select: { refereeId: true },
+        });
         return !!link;
     }
     async createLink(referrerId, refereeId, level) {
-        await this.prisma.referralLink.create({ data: { referrerId, refereeId, level } });
+        await this.prisma.referralLink.create({
+            data: { referrerId, refereeId, level },
+        });
     }
     async getDirectReferees(userId) {
-        const rows = await this.prisma.referralLink.findMany({ where: { referrerId: userId }, select: { refereeId: true } });
-        return rows.map(r => r.refereeId);
+        const rows = await this.prisma.referralLink.findMany({
+            where: { referrerId: userId },
+            select: { refereeId: true },
+        });
+        return rows.map((r) => r.refereeId);
     }
 };
 exports.PrismaReferralRepository = PrismaReferralRepository;

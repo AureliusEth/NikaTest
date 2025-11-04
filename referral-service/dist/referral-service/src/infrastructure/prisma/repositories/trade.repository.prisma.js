@@ -18,7 +18,9 @@ let PrismaTradesRepository = class PrismaTradesRepository {
         this.prisma = prisma;
     }
     async createTrade(tradeId, userId, feeAmount, chain = 'EVM') {
-        await this.prisma.trade.create({ data: { id: tradeId, userId, feeAmount, chain } });
+        await this.prisma.trade.create({
+            data: { id: tradeId, userId, feeAmount, chain },
+        });
     }
 };
 exports.PrismaTradesRepository = PrismaTradesRepository;

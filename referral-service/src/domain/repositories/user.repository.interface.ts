@@ -1,6 +1,6 @@
 /**
  * Domain Repository Interface - Users
- * 
+ *
  * This interface defines the contract for user data access.
  * Implementations belong in the infrastructure layer.
  */
@@ -31,4 +31,3 @@ export interface UserRepository {
   /** Persist or update user's email */
   setEmail(userId: string, email: string): Promise<void>;
 }
-

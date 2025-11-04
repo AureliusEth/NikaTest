@@ -82,7 +82,9 @@ let SvmBlockchainService = SvmBlockchainService_1 = class SvmBlockchainService {
         if (!this.connection) {
             throw new Error('Connection not initialized');
         }
-        this.provider = new anchor_1.AnchorProvider(this.connection, new anchor_1.Wallet(keypair), { commitment: 'confirmed' });
+        this.provider = new anchor_1.AnchorProvider(this.connection, new anchor_1.Wallet(keypair), {
+            commitment: 'confirmed',
+        });
         const idl = nika_treasury_json_1.default;
         this.logger.log(`Using Anchor TypeScript IDL for NikaTreasury`);
         try {
@@ -105,7 +107,7 @@ let SvmBlockchainService = SvmBlockchainService_1 = class SvmBlockchainService {
         return new Uint8Array(Buffer.from(cleanHex, 'hex'));
     }
     parseHexProofArray(hexArray) {
-        return hexArray.map(hex => this.hexToUint8Array(hex));
+        return hexArray.map((hex) => this.hexToUint8Array(hex));
     }
     async ensureStateInitialized() {
         if (!this.program || !this.wallet) {
@@ -124,8 +126,7 @@ let SvmBlockchainService = SvmBlockchainService_1 = class SvmBlockchainService {
                 error.message?.includes('AccountOwnedByWrongProgram') ||
                 error.message?.includes('Invalid account discriminator');
             if (isUninitialized) {
-                const stateKeypairPath = process.env.SVM_STATE_KEYPAIR_PATH ||
-                    process.env.STATE_KEYPAIR_PATH;
+                const stateKeypairPath = process.env.SVM_STATE_KEYPAIR_PATH || process.env.STATE_KEYPAIR_PATH;
                 if (!stateKeypairPath) {
                     throw new Error('State account not initialized and no state keypair provided. ' +
                         'Set SVM_STATE_KEYPAIR_PATH environment variable or run initialization script first.');
@@ -149,7 +150,6 @@ let SvmBlockchainService = SvmBlockchainService_1 = class SvmBlockchainService {
                         .accounts({
                         state: stateKeypair.publicKey,
                         authority: this.wallet.publicKey,
-                        systemProgram: new web3_js_1.PublicKey('11111111111111111111111111111111'),
                     })
                         .signers([stateKeypair])
                         .rpc();
@@ -215,7 +215,6 @@ let SvmBlockchainService = SvmBlockchainService_1 = class SvmBlockchainService {
                 .updateRoot(Array.from(rootBytes))
                 .accounts({
                 state: statePublicKey,
-                authority: walletPubkey,
             })
                 .simulate();
             if (simulateResult.value?.err) {
@@ -225,7 +224,6 @@ let SvmBlockchainService = SvmBlockchainService_1 = class SvmBlockchainService {
                 .updateRoot(Array.from(rootBytes))
                 .accounts({
                 state: statePublicKey,
-                authority: walletPubkey,
             })
                 .rpc();
             this.logger.log(`Transaction confirmed: ${tx}`);
@@ -238,7 +236,8 @@ let SvmBlockchainService = SvmBlockchainService_1 = class SvmBlockchainService {
                 throw new Error(`Root mismatch after update. Expected: 0x${expectedRootHex}, Got: 0x${updatedRootHex}. ` +
                     `Transaction: ${tx}. Check transaction logs for errors.`);
             }
-            if (updatedRootHex === '0'.repeat(64) && expectedRootHex === '0'.repeat(64)) {
+            if (updatedRootHex === '0'.repeat(64) &&
+                expectedRootHex === '0'.repeat(64)) {
                 this.logger.warn(`Updated to zero merkle root. This is expected for tokens with no claimable data. ` +
                     `Transaction: ${tx}`);
             }
@@ -265,7 +264,8 @@ let SvmBlockchainService = SvmBlockchainService_1 = class SvmBlockchainService {
             return '0x' + rootHex;
         }
         catch (error) {
-            if (error.message?.includes('Account does not exist') || error.message?.includes('fetch')) {
+            if (error.message?.includes('Account does not exist') ||
+                error.message?.includes('fetch')) {
                 this.logger.warn(`State account not found at ${statePublicKey.toString()}, returning zero root`);
                 return '0x' + '0'.repeat(64);
             }
@@ -287,7 +287,8 @@ let SvmBlockchainService = SvmBlockchainService_1 = class SvmBlockchainService {
             return Number(state.version);
         }
         catch (error) {
-            if (error.message?.includes('Account does not exist') || error.message?.includes('fetch')) {
+            if (error.message?.includes('Account does not exist') ||
+                error.message?.includes('fetch')) {
                 this.logger.warn(`State account not found at ${statePublicKey.toString()}, returning version 0`);
                 return 0;
             }
@@ -302,17 +303,20 @@ let SvmBlockchainService = SvmBlockchainService_1 = class SvmBlockchainService {
         const resolvedStateAddress = this.getStateAddress();
         const statePublicKey = new web3_js_1.PublicKey(resolvedStateAddress);
         const proofBytes = this.parseHexProofArray(proof);
+        const proofNumbers = proofBytes.map((p) => Array.from(p));
         try {
             const sim = await this.program.methods
-                .verifyProof(user_id, token, amount_str, proofBytes)
+                .verifyProof(user_id, token, amount_str, proofNumbers)
                 .accounts({
                 state: statePublicKey,
-            }).simulate();
+            })
+                .simulate();
             const events = sim?.events || [];
             let valid = false;
             if (Array.isArray(events)) {
                 for (const event of events) {
-                    if (event?.name === 'proofVerified' && typeof event?.data?.valid === 'boolean') {
+                    if (event?.name === 'proofVerified' &&
+                        typeof event?.data?.valid === 'boolean') {
                         valid = event.data.valid;
                         break;
                     }

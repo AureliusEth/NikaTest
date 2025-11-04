@@ -1,6 +1,6 @@
 /**
  * Application Constants
- * 
+ *
  * Centralized constants used across the application.
  * Makes it easy to change values without modifying code.
  */
@@ -20,7 +20,7 @@ export const INTERNAL_EMAIL_DOMAIN = '@internal.nika.com';
  * Commission rates for referral levels
  */
 export const COMMISSION_RATES = {
-  LEVEL_1: 0.30, // 30% for direct referrals
+  LEVEL_1: 0.3, // 30% for direct referrals
   LEVEL_2: 0.03, // 3% for second level
   LEVEL_3: 0.02, // 2% for third level
 } as const;
@@ -34,4 +34,3 @@ export const TREASURY_PERCENTAGE = 0;
  * Maximum referral depth (levels)
  */
 export const MAX_REFERRAL_DEPTH = 3;
-
