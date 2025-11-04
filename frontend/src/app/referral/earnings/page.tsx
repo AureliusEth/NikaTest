@@ -13,7 +13,6 @@ export default function EarningsPage() {
 	const [err, setErr] = useState('');
 	const [isClaimModalOpen, setIsClaimModalOpen] = useState(false);
 	const [selectedChain, setSelectedChain] = useState<'EVM' | 'SVM'>('EVM');
-	const [generatingRoots, setGeneratingRoots] = useState(false);
 	
 	useEffect(() => {
 		loadData();
@@ -23,47 +22,6 @@ export default function EarningsPage() {
 		load().then(setData).catch(e=>setErr(e?.message || 'Failed'));
 	};
 
-	const generateAllRoots = async () => {
-		setGeneratingRoots(true);
-		try {
-			const response = await fetch('http://localhost:3000/api/merkle/generate-all', {
-				method: 'POST',
-				credentials: 'include',
-			});
-
-			if (response.ok) {
-				const result = await response.json();
-				console.log('Generated merkle roots:', result);
-				const successMessages = result.results.map((r: any) => {
-					if (r.success) {
-						let msg = `${r.chain}/${r.token}: ✓ v${r.version}`;
-						if (r.onChainUpdated && r.txHash) {
-							msg += ` (on-chain: ${r.txHash.substring(0, 10)}...)`;
-						} else if (r.onChainUpdated === false) {
-							msg += ` (on-chain update skipped/failed)`;
-						}
-						return msg;
-					} else {
-						return `${r.chain}/${r.token}: ✗ ${r.error}`;
-					}
-				});
-				const hasErrors = result.results.some((r: any) => !r.success);
-				if (hasErrors) {
-					toast.addToast(`⚠️ Some roots failed to generate:\n${successMessages.join('\n')}`, 'warning', 8000);
-				} else {
-					toast.addToast(`✅ Generated all merkle roots!\n\n${successMessages.join('\n')}`, 'success', 8000);
-				}
-			} else {
-				const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
-				toast.addToast(`Failed to generate merkle roots: ${errorData.error || 'Unknown error'}`, 'error');
-			}
-		} catch (error: any) {
-			console.error('Failed to generate roots:', error);
-			toast.addToast(`Error generating merkle roots: ${error.message || 'Network error'}`, 'error');
-		} finally {
-			setGeneratingRoots(false);
-		}
-	};
 
 	const openClaimModal = (chain: 'EVM' | 'SVM') => {
 		setSelectedChain(chain);
@@ -91,20 +49,6 @@ export default function EarningsPage() {
 					</p>
 				</div>
 
-				{/* Testing Tools */}
-				<div className="mb-6 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
-					<h3 className="font-semibold text-yellow-900 mb-2">🧪 Testing Tools</h3>
-					<p className="text-sm text-yellow-800 mb-3">
-						Generate merkle roots manually to make your earnings claimable
-					</p>
-					<button
-						onClick={generateAllRoots}
-						disabled={generatingRoots}
-						className="px-4 py-2 bg-yellow-600 text-white rounded-lg font-medium hover:bg-yellow-700 disabled:bg-gray-300"
-					>
-						{generatingRoots ? 'Generating...' : '🔄 Generate All Merkle Roots'}
-					</button>
-				</div>
 
 				{err && (
 					<div className="p-4 rounded-lg mb-6" style={{ background: '#fef2f2', border: '1px solid #fca5a5' }}>

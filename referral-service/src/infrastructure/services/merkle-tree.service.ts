@@ -218,6 +218,10 @@ export class MerkleTreeService implements IMerkleTreeService {
     token: string,
   ): Promise<ClaimableBalance[]> {
     // Get total earned per user from ledger (filtered by chain via join with Trade table)
+    // RAW QUERY JUSTIFIED: Prisma's groupBy() doesn't support:
+    // 1. JOINs - we need to filter ledger by trade.chain
+    // 2. HAVING clauses with complex expressions
+    // This query is performance-critical for Merkle tree generation.
     const earnedResults = await this.prisma.$queryRaw<
       Array<{ beneficiaryId: string; totalEarned: string }>
     >`
@@ -234,6 +238,8 @@ export class MerkleTreeService implements IMerkleTreeService {
     `;
 
     // Get total claimed per user from claim records
+    // RAW QUERY JUSTIFIED: Simple aggregation, but kept as raw SQL for consistency
+    // and to avoid n+1 queries when processing many users.
     const claimedResults = await this.prisma.$queryRaw<
       Array<{ userId: string; totalClaimed: string }>
     >`

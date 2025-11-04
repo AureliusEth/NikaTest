@@ -551,6 +551,9 @@ export class MerkleController {
     );
 
     // Calculate user's cashback (level 0 entries) from ledger, filtered by chain
+    // RAW QUERY JUSTIFIED: Prisma's aggregations don't support filtering across relations.
+    // We need to JOIN CommissionLedgerEntry with Trade to filter by chain, then SUM.
+    // This is a common pattern for cross-table aggregations that Prisma can't handle efficiently.
     const cashbackResult = await this.prisma.$queryRaw<
       Array<{ totalCashback: string }>
     >`
@@ -567,6 +570,7 @@ export class MerkleController {
     const userCashback = Number(cashbackResult[0]?.totalCashback || 0);
 
     // Calculate commission earnings (level > 0 entries)
+    // RAW QUERY JUSTIFIED: Same as above - cross-table aggregation with JOIN.
     const commissionResult = await this.prisma.$queryRaw<
       Array<{ totalCommissions: string }>
     >`

@@ -33,6 +33,23 @@ export class AuthController {
         ? base
         : `USER_${Math.random().toString(36).slice(2, 8).toUpperCase()}`;
 
+    // Check if user already exists by checking for earnings or network
+    // A user is considered "existing" if they have any activity (earnings OR referrals)
+    const [earnings, network] = await Promise.all([
+      this.referralApp
+        .getEarnings(userId)
+        .catch(() => ({ total: 0, byLevel: {} })),
+      this.referralApp
+        .getNetwork(userId)
+        .catch(() => ({ level1: [], level2: [], level3: [] })),
+    ]);
+
+    const isExistingUser =
+      earnings.total > 0 ||
+      network.level1.length > 0 ||
+      network.level2.length > 0 ||
+      network.level3.length > 0;
+
     // Save email
     await this.referralApp.setUserEmail(userId, body.email);
 
@@ -63,6 +80,7 @@ export class AuthController {
     return {
       userId,
       level,
+      isExistingUser,
       message: 'Logged in successfully',
     };
   }

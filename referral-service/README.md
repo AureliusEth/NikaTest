@@ -318,6 +318,17 @@ Body: {
 Response: { ok: boolean }
 ```
 
+**What it does:**
+- Simulates a trade transaction generating a fee
+- Automatically distributes commissions:
+  - 10% cashback to the trader
+  - 30% to Level 1 referrer (if exists)
+  - 3% to Level 2 referrer (if exists)
+  - 2% to Level 3 referrer (if exists)
+  - Remaining percentage goes to treasury
+- Creates ledger entries that can be claimed via Merkle proofs
+- Idempotent: same `tradeId` won't create duplicate commissions
+
 #### Merkle/Claim Endpoints
 
 **Get Current Root**

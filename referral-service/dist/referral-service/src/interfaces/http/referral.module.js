@@ -15,6 +15,7 @@ const auth_controller_1 = require("./auth.controller");
 const merkle_controller_1 = require("./merkle.controller");
 const referral_app_service_1 = require("../../application/referral.app.service");
 const trades_app_service_1 = require("../../application/trades.app.service");
+const tokens_1 = require("../../application/tokens");
 const prisma_module_1 = require("../../infrastructure/prisma/prisma.module");
 const blockchain_module_1 = require("../../infrastructure/blockchain/blockchain.module");
 const referral_service_1 = require("../../infrastructure/services/referral.service");
@@ -42,7 +43,11 @@ exports.ReferralModule = ReferralModule = __decorate([
         providers: [
             referral_app_service_1.ReferralAppService,
             trades_app_service_1.TradesAppService,
-            referral_service_1.ReferralService,
+            {
+                provide: referral_service_1.ReferralService,
+                useFactory: (referralRepo) => new referral_service_1.ReferralService(referralRepo),
+                inject: [tokens_1.TOKENS.ReferralRepository],
+            },
             default_policy_1.DefaultPolicy,
             {
                 provide: commission_service_1.CommissionService,

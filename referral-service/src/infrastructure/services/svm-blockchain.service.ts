@@ -293,9 +293,8 @@ export class SvmBlockchainService {
 
     try {
       // First, verify the state account's authority matches our wallet
-      const currentState = await this.program.account.state.fetch(
-        statePublicKey,
-      );
+      const currentState =
+        await this.program.account.state.fetch(statePublicKey);
       const stateAuthority = new PublicKey(currentState.authority.toString());
       const walletPubkey = this.wallet.publicKey;
 
@@ -338,9 +337,8 @@ export class SvmBlockchainService {
       // Verify the update was successful by fetching the root
       // Wait a bit for the transaction to be confirmed
 
-      const updatedState = await this.program.account.state.fetch(
-        statePublicKey,
-      );
+      const updatedState =
+        await this.program.account.state.fetch(statePublicKey);
       const updatedRootHex = Buffer.from(updatedState.merkleRoot).toString(
         'hex',
       );
@@ -404,9 +402,7 @@ export class SvmBlockchainService {
 
       // Use program.account API which should work with proper provider
       // If account doesn't exist, we'll get a clear error
-      const state = await this.program.account.state.fetch(
-        statePublicKey,
-      );
+      const state = await this.program.account.state.fetch(statePublicKey);
       const rootHex = Buffer.from(state.merkleRoot).toString('hex');
       return '0x' + rootHex;
     } catch (error: any) {
@@ -447,9 +443,7 @@ export class SvmBlockchainService {
         throw new Error('Connection not initialized');
       }
 
-      const state = await this.program.account.state.fetch(
-        statePublicKey,
-      );
+      const state = await this.program.account.state.fetch(statePublicKey);
       return Number(state.version);
     } catch (error: any) {
       // If account doesn't exist, return 0

@@ -55,6 +55,12 @@ export class PrismaLedgerRepository implements LedgerRepository {
   async getRefereeEarnings(userId: string): Promise<RefereeEarnings[]> {
     // Get earnings grouped by referee (sourceTradeId -> userId from Trade)
     // We need to join ledger entries with trades to get the trader's info
+    // RAW QUERY JUSTIFIED: Complex aggregation requirements:
+    // 1. JOIN CommissionLedgerEntry with Trade
+    // 2. GROUP BY multiple fields (userId, level)
+    // 3. Multiple aggregations (SUM, COUNT DISTINCT)
+    // 4. ORDER BY with aggregation in the sort
+    // Prisma's groupBy() cannot handle this complexity.
     const results = await this.prisma.$queryRaw<
       Array<{
         userId: string;

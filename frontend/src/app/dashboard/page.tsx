@@ -43,7 +43,7 @@ export default function DashboardPage() {
 	const [showGenerateModal, setShowGenerateModal] = useState(false);
 	const [refCode, setRefCode] = useState('');
 	const [isClaimModalOpen, setIsClaimModalOpen] = useState(false);
-	const [generatingRoots, setGeneratingRoots] = useState(false);
+	const [userRefCode, setUserRefCode] = useState('');
 
 	// Theme-aware color functions
 	const getGlassmorphicBg = (opacity: number = 0.7) => 
@@ -83,6 +83,23 @@ export default function DashboardPage() {
 				]);
 				setDashboard(dashData);
 				setActivity(activityData);
+
+				// Fetch user's referral code
+				const userId = typeof window !== 'undefined' ? localStorage.getItem('x-user-id') : '';
+				const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:3000';
+				try {
+					const refRes = await fetch(`${baseUrl}/api/referral/generate`, {
+						method: 'POST',
+						headers: { 'x-user-id': userId || '' },
+						credentials: 'include'
+					});
+					const refData = await refRes.json();
+					if (refRes.ok && refData.code) {
+						setUserRefCode(refData.code);
+					}
+				} catch (e) {
+					console.error('Failed to fetch referral code:', e);
+				}
 			} catch (e: any) {
 				setError(e?.message || 'Failed to load dashboard');
 			} finally {
@@ -126,46 +143,6 @@ export default function DashboardPage() {
 		return date.toLocaleDateString();
 	};
 
-	const generateAllRoots = async () => {
-		setGeneratingRoots(true);
-		try {
-			const response = await fetch('http://localhost:3000/api/merkle/generate-all', {
-				method: 'POST',
-				credentials: 'include',
-			});
-
-			if (response.ok) {
-				const result = await response.json();
-				const successMessages = result.results.map((r: any) => {
-					if (r.success) {
-						let msg = `${r.chain}/${r.token}: ✓ v${r.version}`;
-						if (r.onChainUpdated && r.txHash) {
-							msg += ` (on-chain: ${r.txHash.substring(0, 10)}...)`;
-						} else if (r.onChainUpdated === false) {
-							msg += ` (on-chain update skipped/failed)`;
-						}
-						return msg;
-					} else {
-						return `${r.chain}/${r.token}: ✗ ${r.error}`;
-					}
-				});
-				const hasErrors = result.results.some((r: any) => !r.success);
-				if (hasErrors) {
-					toast.addToast(`⚠️ Some roots failed to generate:\n${successMessages.join('\n')}`, 'warning', 8000);
-				} else {
-					toast.addToast(`✅ Generated all merkle roots!\n\n${successMessages.join('\n')}`, 'success', 8000);
-				}
-			} else {
-				const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
-				toast.addToast(`Failed to generate merkle roots: ${errorData.error || 'Unknown error'}`, 'error');
-			}
-		} catch (error: any) {
-			console.error('Failed to generate roots:', error);
-			toast.addToast(`Error generating merkle roots: ${error.message || 'Network error'}`, 'error');
-		} finally {
-			setGeneratingRoots(false);
-		}
-	};
 
 
 	return (
@@ -433,6 +410,52 @@ export default function DashboardPage() {
 						{/* Hourly Earnings Chart - Above everything else */}
 						<HourlyEarningsChart />
 
+						{/* Referral Code Card - Above XP Display */}
+						{userRefCode && (
+							<div style={{ 
+								background: getCardBg(),
+								backdropFilter: 'blur(20px)',
+								border: `1px solid ${getGlassmorphicBorder(0.2)}`,
+								borderRadius: '16px', 
+								padding: '24px 32px',
+								marginBottom: '24px',
+								boxShadow: isDark ? '0 8px 32px rgba(0, 0, 0, 0.3)' : '0 8px 32px rgba(0, 0, 0, 0.1)',
+							}}>
+								<div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '16px' }}>
+									<div style={{ flex: 1 }}>
+										<p style={{ color: getTextSecondary(), fontSize: '12px', fontWeight: 500, marginBottom: '8px', letterSpacing: '0.5px', textTransform: 'uppercase' }}>
+											Your Referral Code
+										</p>
+										<p style={{ color: getTextColor(), fontSize: '24px', fontWeight: 600, margin: '0', fontFamily: 'monospace', letterSpacing: '0.5px' }}>
+											{userRefCode}
+										</p>
+										<p style={{ color: getTextSecondary(), fontSize: '13px', marginTop: '8px' }}>Share this code to earn up to 30% commission</p>
+									</div>
+									<button 
+										onClick={() => {
+											navigator.clipboard.writeText(userRefCode);
+											toast.addToast('Referral code copied!', 'success');
+										}}
+										style={{
+											padding: '12px 24px',
+											fontSize: '14px',
+											fontWeight: 600,
+											border: 'none',
+											borderRadius: '10px',
+											background: 'linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%)',
+											color: 'white',
+											cursor: 'pointer',
+											transition: 'all 0.2s ease',
+											boxShadow: '0 4px 12px rgba(139, 92, 246, 0.3)',
+											whiteSpace: 'nowrap'
+										}}
+									>
+										📋 Copy Code
+									</button>
+								</div>
+							</div>
+						)}
+
 						{/* XP Display - Glassmorphic */}
 						<div style={{ 
 							background: getCardBg(),
@@ -471,8 +494,8 @@ export default function DashboardPage() {
 									</div>
 								</div>
 								
-                                {/* Unified Claim Button */}
-                                <div style={{ marginTop: '32px', display: 'flex', gap: '12px', justifyContent: 'center', flexWrap: 'wrap' }}>
+                                {/* Claim Button */}
+                                <div style={{ marginTop: '32px', display: 'flex', justifyContent: 'center' }}>
 									<button
 										onClick={() => setIsClaimModalOpen(true)}
 										className="btn"
@@ -490,23 +513,6 @@ export default function DashboardPage() {
 										}}
 									>
 										💎 Claim XP
-									</button>
-									<button
-										onClick={generateAllRoots}
-										disabled={generatingRoots}
-										className="btn"
-										style={{ 
-											background: isDark ? 'rgba(245, 158, 11, 0.8)' : '#f59e0b', 
-											color: 'white',
-											border: 'none',
-											padding: '12px 24px',
-											fontSize: '15px',
-											fontWeight: 600,
-											borderRadius: '8px',
-											cursor: 'pointer',
-										}}
-									>
-										{generatingRoots ? 'Generating...' : '🔄 Generate Roots'}
 									</button>
                                 </div>
 							</div>

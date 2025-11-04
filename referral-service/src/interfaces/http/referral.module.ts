@@ -6,6 +6,7 @@ import { AuthController } from './auth.controller';
 import { MerkleController } from './merkle.controller';
 import { ReferralAppService } from '../../application/referral.app.service';
 import { TradesAppService } from '../../application/trades.app.service';
+import { TOKENS } from '../../application/tokens';
 import { PrismaModule } from '../../infrastructure/prisma/prisma.module';
 import { BlockchainModule } from '../../infrastructure/blockchain/blockchain.module';
 import { ReferralService } from '../../infrastructure/services/referral.service';
@@ -17,6 +18,7 @@ import { ClaimService } from '../../infrastructure/services/claim.service';
 import { DefaultPolicy } from '../../infrastructure/policies/default-policy';
 import { AuthService } from '../../common/auth/auth.service';
 import { SessionAuthGuard } from '../../common/guards/session-auth.guard';
+import type { ReferralRepository } from '../../application/ports/repositories';
 
 @Module({
   imports: [PrismaModule, BlockchainModule],
@@ -30,7 +32,12 @@ import { SessionAuthGuard } from '../../common/guards/session-auth.guard';
   providers: [
     ReferralAppService,
     TradesAppService,
-    ReferralService,
+    {
+      provide: ReferralService,
+      useFactory: (referralRepo: ReferralRepository) =>
+        new ReferralService(referralRepo),
+      inject: [TOKENS.ReferralRepository],
+    },
     DefaultPolicy,
     {
       provide: CommissionService,

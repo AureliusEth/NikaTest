@@ -157,6 +157,9 @@ export class ReferralAppService {
     const startTime = new Date(now.getTime() - hours * 60 * 60 * 1000);
 
     // Query ledger entries grouped by hour
+    // RAW QUERY JUSTIFIED: Uses PostgreSQL-specific DATE_TRUNC() function.
+    // Prisma doesn't have a database-agnostic way to group by time intervals.
+    // This is required for the hourly earnings chart feature.
     const results = await this.prisma.$queryRaw<
       Array<{
         hour: string;

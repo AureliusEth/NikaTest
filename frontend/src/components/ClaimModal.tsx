@@ -88,6 +88,16 @@ export default function ClaimModal({ isOpen, onClose, onClaimSuccess }: ClaimMod
     setError(null);
 
     try {
+      // Auto-generate roots before claiming
+      const generateRes = await fetch('/api/merkle/generate-all', {
+        method: 'POST',
+        credentials: 'include',
+      });
+      
+      if (!generateRes.ok) {
+        console.warn('Failed to auto-generate roots, continuing with claim...');
+      }
+      
       const claimPromises = [];
       
       if (canClaimEvm) {
