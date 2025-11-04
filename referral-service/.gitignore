@@ -1,6 +1,6 @@
 node_modules
-# Keep environment variables out of version control
-.env
+# Environment files (keep dev .env committed for evaluator convenience)
+# NOTE: Contains dev/test credentials ONLY. Do not reuse in production.
 
 /generated/prisma
 
