@@ -1,4 +1,5 @@
 use anchor_lang::prelude::*;
+use solana_program::keccak;
 
 declare_id!("EkEP6vRisXSE4TSBDvr8FcpzZgSaYeVKc9uRdFpnXQVB");
 
@@ -24,29 +25,32 @@ pub mod nika_treasury {
 
     pub fn verify_proof(
         ctx: Context<VerifyProof>,
-        amount: u64,
+        user_id: String,
+        token: String,
+        amount_str: String,
         proof: Vec<[u8; 32]>
     ) -> Result<bool> {
         let state = &ctx.accounts.state;
-        let user = ctx.accounts.user.key();
         
-        // Create leaf
-        let leaf = hash_leaf(user, amount);
+        // Create leaf (must match backend format: userId:token:amount)
+        // backend uses: `${balance.beneficiaryId}:${balance.token}:${balance.totalAmount.toFixed(8)}`
+        let leaf = hash_leaf(&user_id, &token, &amount_str);
         
         // Verify merkle proof
         let valid = verify_merkle_proof(&proof, state.merkle_root, leaf);
         
         // Emit event for easier testing
         emit!(ProofVerified {
-            user: user,
-            amount: amount,
+            user_id: user_id.clone(),
+            token: token.clone(),
+            amount_str: amount_str.clone(),
             valid: valid,
         });
         
         Ok(valid)
     }
 
-    pub fn viewRoot(ctx: Context<ViewRoot>) -> Result<[u8; 32]> {
+    pub fn view_root(ctx: Context<ViewRoot>) -> Result<[u8; 32]> {
         let state = &ctx.accounts.state;
         Ok(state.merkle_root)
     }
@@ -76,7 +80,6 @@ pub struct UpdateRoot<'info> {
 #[derive(Accounts)]
 pub struct VerifyProof<'info> {
     pub state: Account<'info, State>,
-    pub user: Signer<'info>,
 }
 
 #[account]
@@ -90,14 +93,14 @@ impl State {
     pub const LEN: usize =  32 + 8 + 32;
 }
 
-fn hash_leaf(user: Pubkey, amount: u64) -> [u8; 32] {
-    use solana_program::hash::hash;
-    let data = format!("{}:{}", user, amount);
-    hash(data.as_bytes()).to_bytes()
+// Hash leaf using keccak256 format: userId:token:amount (matches backend MerkleTreeService.createLeaf)
+// Backend creates: `${balance.beneficiaryId}:${balance.token}:${balance.totalAmount.toFixed(8)}`
+fn hash_leaf(user_id: &str, token: &str, amount_str: &str) -> [u8; 32] {
+    let data = format!("{}:{}:{}", user_id, token, amount_str);
+    keccak::hash(data.as_bytes()).to_bytes()
 }
 
 fn verify_merkle_proof(proof: &[[u8; 32]], root: [u8; 32], leaf: [u8; 32]) -> bool {
-    use solana_program::hash::hash;
     
     let mut computed_hash = leaf;
     
@@ -108,7 +111,7 @@ fn verify_merkle_proof(proof: &[[u8; 32]], root: [u8; 32], leaf: [u8; 32]) -> bo
             [*proof_element, computed_hash].concat()
         };
         
-        computed_hash = hash(&combined).to_bytes();
+        computed_hash = keccak::hash(&combined).to_bytes();
     }
     
     computed_hash == root
@@ -122,7 +125,8 @@ pub enum ErrorCode {
 
 #[event]
 pub struct ProofVerified {
-    pub user: Pubkey,
-    pub amount: u64,
+    pub user_id: String,
+    pub token: String,
+    pub amount_str: String,
     pub valid: bool,
 }

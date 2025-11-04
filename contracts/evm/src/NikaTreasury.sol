@@ -15,13 +15,15 @@ contract NikaTreasury is Ownable {
         emit MerkleRootUpdated(newRoot);
     }
     function verifyProof(
-        bytes32[] memory proof,  // ← Add 'memory'
-        uint256 amount,
-        address user
+        bytes32[] memory proof,
+        string memory user_id,
+        string memory token,
+        string memory amount_str
     ) public view returns (bool) {
         // Step 1: Create user's leaf from raw data
-        bytes32 computedHash = keccak256(abi.encodePacked(user, ":", amount));
-        
+        // Backend format: `${balance.beneficiaryId}:${balance.token}:${balance.totalAmount.toFixed(8)}`
+        // Note: Backend uses SHA256, but EVM uses keccak256 (same as SHA3-256)
+        bytes32 computedHash = keccak256(abi.encodePacked(user_id, ":", token, ":", amount_str));
         
         // Step 2: Climb up the tree, hashing pair by pair
         for (uint256 i = 0; i < proof.length; i++) {

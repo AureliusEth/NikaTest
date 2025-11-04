@@ -1,6 +1,8 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { TOKENS } from './tokens';
 import type { ReferralRepository, UserRepository, LedgerRepository, IdempotencyStore } from './ports/repositories';
+import { PrismaService } from '../infrastructure/prisma/services/prisma.service';
+import { ReferralService } from '../infrastructure/services/referral.service';
 // Domain contains only interfaces. Implementations live in application/infrastructure.
 
 @Injectable()
@@ -11,6 +13,8 @@ export class ReferralAppService {
     @Inject(TOKENS.ReferralRepository) private readonly refRepo: ReferralRepository,
     @Inject(TOKENS.LedgerRepository) private readonly ledgerRepo: LedgerRepository,
     @Inject(TOKENS.IdempotencyStore) private readonly idem: IdempotencyStore,
+    private readonly prisma: PrismaService,
+    private readonly referralService: ReferralService,
   ) {}
 
   async createOrGetReferralCode(userId: string): Promise<string> {
@@ -24,13 +28,10 @@ export class ReferralAppService {
   async registerReferralByCode(userId: string, code: string): Promise<number> {
     const ref = await this.userRepo.findByReferralCode(code);
     if (!ref) throw new Error('Referral code not found');
-    // Inline validation rules
-    if (userId === ref.id) throw new Error('Cannot self-refer');
-    if (await this.refRepo.hasReferrer(userId)) throw new Error('Referrer already set');
-    const referrerAncestors = await this.refRepo.getAncestors(ref.id, 10);
-    if (referrerAncestors.includes(userId)) throw new Error('Cycle detected');
-    const level = (referrerAncestors.length ?? 0) + 1;
-    if (level > 3) throw new Error('Depth exceeds 3 levels');
+    
+    // Use ReferralService for validation (single source of truth)
+    const level = await this.referralService.computeLevelOrThrow(userId, ref.id);
+    
     await this.refRepo.createLink(ref.id, userId, level);
     return level;
   }
@@ -64,6 +65,9 @@ export class ReferralAppService {
 
   async getDashboard(userId: string): Promise<{
     totalXP: number;
+    totalEarned: number;
+    totalClaimed: number;
+    unclaimedXP: number;
     referrals: Array<{
       userId: string;
       level: number;
@@ -75,6 +79,14 @@ export class ReferralAppService {
     const earnings = await this.ledgerRepo.getEarningsSummary(userId);
     const refereeEarnings = await this.ledgerRepo.getRefereeEarnings(userId);
 
+    // Get total claimed XP across all chains
+    const claimed = await this.prisma.claimRecord.aggregate({
+      where: { userId, token: 'XP' },
+      _sum: { amount: true },
+    });
+    const totalClaimed = Number(claimed._sum.amount || 0);
+    const unclaimedXP = earnings.total - totalClaimed;
+
     // Calculate percentage of total for each referee
     const referrals = refereeEarnings.map(r => ({
       userId: r.refereeId,
@@ -85,7 +97,10 @@ export class ReferralAppService {
     }));
 
     return {
-      totalXP: earnings.total,
+      totalXP: unclaimedXP, // Show unclaimed as the main metric
+      totalEarned: earnings.total,
+      totalClaimed,
+      unclaimedXP,
       referrals,
     };
   }
@@ -99,6 +114,53 @@ export class ReferralAppService {
     createdAt: Date;
   }>> {
     return this.ledgerRepo.getRecentActivity(userId, limit);
+  }
+
+  async getHourlyEarnings(userId: string, hours: number = 24): Promise<Array<{
+    hour: string; // ISO date string truncated to hour
+    timestamp: number; // Unix timestamp for the hour
+    earnings: number; // Total XP earned in this hour
+  }>> {
+    // Get last N hours
+    const now = new Date();
+    const startTime = new Date(now.getTime() - hours * 60 * 60 * 1000);
+    
+    // Query ledger entries grouped by hour
+    const results = await this.prisma.$queryRaw<Array<{
+      hour: string;
+      earnings: string;
+    }>>`
+      SELECT 
+        DATE_TRUNC('hour', l."createdAt")::text as hour,
+        COALESCE(SUM(l.amount), 0)::text as earnings
+      FROM "CommissionLedgerEntry" l
+      WHERE l."beneficiaryId" = ${userId}
+        AND l.destination = 'claimable'
+        AND l.token = 'XP'
+        AND l."createdAt" >= ${startTime}
+      GROUP BY DATE_TRUNC('hour', l."createdAt")
+      ORDER BY hour ASC
+    `;
+
+    // Fill in missing hours with zero earnings
+    const hourlyData: Map<string, number> = new Map();
+    for (let i = 0; i < hours; i++) {
+      const hourDate = new Date(startTime.getTime() + i * 60 * 60 * 1000);
+      const hourKey = hourDate.toISOString().slice(0, 13) + ':00:00'; // Format: YYYY-MM-DDTHH:00:00
+      hourlyData.set(hourKey, 0);
+    }
+
+    // Update with actual earnings
+    for (const row of results) {
+      hourlyData.set(row.hour, parseFloat(row.earnings));
+    }
+
+    // Convert to array format
+    return Array.from(hourlyData.entries()).map(([hour, earnings]) => ({
+      hour,
+      timestamp: new Date(hour).getTime(),
+      earnings,
+    }));
   }
 }
 

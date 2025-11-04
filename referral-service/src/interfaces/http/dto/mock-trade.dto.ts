@@ -1,4 +1,4 @@
-import { IsNumber, IsOptional, IsString, Min, MinLength } from 'class-validator';
+import { IsNumber, IsOptional, IsString, Min, MinLength, IsIn } from 'class-validator';
 
 export class MockTradeDto {
   @IsString()
@@ -16,6 +16,11 @@ export class MockTradeDto {
   @IsOptional()
   @IsString()
   token?: string;
+
+  @IsOptional()
+  @IsString()
+  @IsIn(['EVM', 'SVM'])
+  chain?: 'EVM' | 'SVM';
 }
 
 

@@ -33,7 +33,12 @@ export class BlockchainModule implements OnModuleInit {
     const svmPrivateKey = process.env.SVM_PRIVATE_KEY;
     
     if (svmRpcUrl) {
+      try {
       this.svmService.initialize(svmRpcUrl, svmPrivateKey);
+      } catch (error) {
+        console.error('Failed to initialize SVM service:', error);
+        // Continue without SVM - backend can still function for EVM-only operations
+      }
     }
   }
 }

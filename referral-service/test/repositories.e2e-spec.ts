@@ -204,6 +204,7 @@ describe('Repository Integration Tests', () => {
           rate: 0.30,
           amount: 30,
           token: 'XP',
+          destination: 'claimable',
         },
       ]);
       
@@ -227,6 +228,7 @@ describe('Repository Integration Tests', () => {
           rate: 0.30,
           amount: 30,
           token: 'XP',
+          destination: 'claimable',
         },
       ]);
       
@@ -239,6 +241,7 @@ describe('Repository Integration Tests', () => {
           rate: 0.30,
           amount: 30,
           token: 'XP',
+          destination: 'claimable',
         },
       ]);
       
@@ -253,9 +256,9 @@ describe('Repository Integration Tests', () => {
       await userRepo.createOrGetReferralCode('BENEFICIARY_003');
       
       await ledgerRepo.recordEntries([
-        { beneficiaryId: 'BENEFICIARY_003', sourceTradeId: 'T1', level: 1, rate: 0.30, amount: 30, token: 'XP' },
-        { beneficiaryId: 'BENEFICIARY_003', sourceTradeId: 'T2', level: 1, rate: 0.30, amount: 20, token: 'XP' },
-        { beneficiaryId: 'BENEFICIARY_003', sourceTradeId: 'T3', level: 2, rate: 0.03, amount: 3, token: 'XP' },
+        { beneficiaryId: 'BENEFICIARY_003', sourceTradeId: 'T1', level: 1, rate: 0.30, amount: 30, token: 'XP', destination: 'claimable' },
+        { beneficiaryId: 'BENEFICIARY_003', sourceTradeId: 'T2', level: 1, rate: 0.30, amount: 20, token: 'XP', destination: 'claimable' },
+        { beneficiaryId: 'BENEFICIARY_003', sourceTradeId: 'T3', level: 2, rate: 0.03, amount: 3, token: 'XP', destination: 'claimable' },
       ]);
       
       const summary = await ledgerRepo.getEarningsSummary('BENEFICIARY_003');

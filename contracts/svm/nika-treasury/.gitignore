@@ -5,3 +5,9 @@ target
 node_modules
 test-ledger
 .yarn
+devnet-wallet.json
+state-keypair.json
+*.keypair.json
+.env
+.env.local
+*.env

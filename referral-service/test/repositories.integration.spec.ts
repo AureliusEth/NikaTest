@@ -204,6 +204,7 @@ describe('Repository Integration Tests', () => {
           rate: 0.30,
           amount: 30,
           token: 'XP',
+          destination: 'claimable',
         },
       ]);
       
@@ -227,6 +228,7 @@ describe('Repository Integration Tests', () => {
           rate: 0.30,
           amount: 30,
           token: 'XP',
+          destination: 'claimable',
         },
       ]);
       
@@ -239,6 +241,7 @@ describe('Repository Integration Tests', () => {
           rate: 0.30,
           amount: 30,
           token: 'XP',
+          destination: 'claimable',
         },
       ]);
       
@@ -253,9 +256,9 @@ describe('Repository Integration Tests', () => {
       await userRepo.createOrGetReferralCode('BENEFICIARY_003');
       
       await ledgerRepo.recordEntries([
-        { beneficiaryId: 'BENEFICIARY_003', sourceTradeId: 'T1', level: 1, rate: 0.30, amount: 30, token: 'XP' },
-        { beneficiaryId: 'BENEFICIARY_003', sourceTradeId: 'T2', level: 1, rate: 0.30, amount: 20, token: 'XP' },
-        { beneficiaryId: 'BENEFICIARY_003', sourceTradeId: 'T3', level: 2, rate: 0.03, amount: 3, token: 'XP' },
+        { beneficiaryId: 'BENEFICIARY_003', sourceTradeId: 'T1', level: 1, rate: 0.30, amount: 30, token: 'XP', destination: 'claimable' },
+        { beneficiaryId: 'BENEFICIARY_003', sourceTradeId: 'T2', level: 1, rate: 0.30, amount: 20, token: 'XP', destination: 'claimable' },
+        { beneficiaryId: 'BENEFICIARY_003', sourceTradeId: 'T3', level: 2, rate: 0.03, amount: 3, token: 'XP', destination: 'claimable' },
       ]);
       
       const summary = await ledgerRepo.getEarningsSummary('BENEFICIARY_003');
@@ -282,19 +285,19 @@ describe('Repository Integration Tests', () => {
       expect(await idempotencyStore.exists('KEY_001')).toBe(true);
     });
 
-    it('should set a key', async () => {
-      await idempotencyStore.set('KEY_002');
+    it('should put a key', async () => {
+      await idempotencyStore.put('KEY_002');
       
       const key = await prisma.idempotencyKey.findUnique({ where: { key: 'KEY_002' } });
       
       expect(key).toBeDefined();
     });
 
-    it('should handle duplicate key silently', async () => {
-      await idempotencyStore.set('KEY_003');
+    it('should throw error on duplicate key', async () => {
+      await idempotencyStore.put('KEY_003');
       
-      // Should not throw error on duplicate
-      await expect(idempotencyStore.set('KEY_003')).resolves.not.toThrow();
+      // Should throw error on duplicate (Prisma unique constraint)
+      await expect(idempotencyStore.put('KEY_003')).rejects.toThrow();
     });
   });
 });

@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { randomBytes } from 'crypto';
 import type { UserRepository, UserRecord } from '../../../application/ports/repositories';
 import { PrismaService } from '../services/prisma.service';
+import { DEFAULT_CASHBACK_RATE, INTERNAL_EMAIL_DOMAIN } from '../../../common/constants';
 
 @Injectable()
 export class PrismaUserRepository implements UserRepository {
@@ -29,11 +30,17 @@ export class PrismaUserRepository implements UserRepository {
     const code = `ref_${randomBytes(6).toString('base64url')}`;
     
     // Use upsert to create user if doesn't exist
-    // TODO: In production, require explicit email before allowing code generation
+    // NOTE: email placeholder used for users created without explicit email
+    // In production, consider requiring email before allowing code generation
     const updated = await this.prisma.user.upsert({
       where: { id: userId },
       update: { referralCode: code },
-      create: { id: userId, email: `${userId}@internal.nika.com`, referralCode: code },
+      create: { 
+        id: userId, 
+        email: `${userId}${INTERNAL_EMAIL_DOMAIN}`, // Placeholder email
+        referralCode: code,
+        feeCashbackRate: DEFAULT_CASHBACK_RATE,
+      },
       select: { referralCode: true }
     });
     return updated.referralCode as string;
@@ -43,7 +50,7 @@ export class PrismaUserRepository implements UserRepository {
     await this.prisma.user.upsert({
       where: { id: userId },
       update: { email },
-      create: { id: userId, email },
+      create: { id: userId, email, feeCashbackRate: DEFAULT_CASHBACK_RATE },
     });
   }
 }

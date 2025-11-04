@@ -26,6 +26,16 @@ class InMemoryReferralRepo implements ReferralRepository {
   async createLink(referrerId: string, refereeId: string, level: number): Promise<void> {
     this.links.set(refereeId, referrerId);
   }
+
+  async getDirectReferees(userId: string): Promise<string[]> {
+    const referees: string[] = [];
+    for (const [refereeId, referrerId] of this.links.entries()) {
+      if (referrerId === userId) {
+        referees.push(refereeId);
+      }
+    }
+    return referees;
+  }
 }
 
 describe('ReferralService', () => {

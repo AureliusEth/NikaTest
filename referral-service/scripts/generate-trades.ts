@@ -39,13 +39,14 @@ async function apiCall(method: string, path: string, userId: string, body?: any)
   return response.json();
 }
 
-async function executeTrade(userId: string, feeAmount: number): Promise<void> {
+async function executeTrade(userId: string, feeAmount: number, chain: 'EVM' | 'SVM'): Promise<void> {
   const tradeId = `TRADE_${userId}_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
   await apiCall('POST', '/api/trades/mock', userId, {
     tradeId,
     userId,
     feeAmount,
     token: 'XP',
+    chain,
   });
 }
 
@@ -90,8 +91,11 @@ Options:
       
       // Generate random fee amount (between 50 and 1000 XP)
       const feeAmount = Math.floor(Math.random() * 950) + 50;
+      
+      // Randomly assign chain (EVM or SVM)
+      const chain = Math.random() > 0.5 ? 'EVM' : 'SVM';
 
-      await executeTrade(randomUser, feeAmount);
+      await executeTrade(randomUser, feeAmount, chain);
 
       if ((i + 1) % progressInterval === 0) {
         console.log(`   ✓ Generated ${i + 1}/${numTrades} trades...`);

@@ -42,7 +42,7 @@ export class EvmBlockchainService {
       'function updateMerkleRoot(bytes32 newRoot) external',
       'function merkleRoot() public view returns (bytes32)',
       'function merkleRootVersion() public view returns (uint256)',
-      'function verifyProof(bytes32[] memory proof, uint256 amount, address user) public view returns (bool)',
+      'function verifyProof(bytes32[] memory proof, string memory user_id, string memory token, string memory amount_str) public view returns (bool)',
       'event MerkleRootUpdated(bytes32 newRoot)',
     ];
 
@@ -113,16 +113,20 @@ export class EvmBlockchainService {
   async verifyProof(
     contractAddress: string,
     proof: string[],
-    amount: number,
-    userAddress: string
+    user_id: string,
+    token: string,
+    amount_str: string
   ): Promise<boolean> {
     const contract = this.getContract(contractAddress);
     
     try {
-      // Convert amount to wei (assuming 18 decimals)
-      const amountWei = ethers.parseUnits(amount.toString(), 18);
-      
-      const isValid = await contract.verifyProof(proof, amountWei, userAddress);
+      const isValid = await contract.verifyProof(proof, user_id, token, amount_str);
+      if (!isValid) {
+        this.logger.warn(
+          `EVM proof invalid. user_id=${user_id}, token=${token}, amount_str=${amount_str}, ` +
+          `proofLen=${proof?.length || 0}, contract=${contractAddress}`
+        );
+      }
       return isValid;
     } catch (error) {
       this.logger.error(`Failed to verify proof: ${error.message}`, error.stack);

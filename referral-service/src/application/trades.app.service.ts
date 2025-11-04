@@ -2,13 +2,10 @@ import { Inject, Injectable } from '@nestjs/common';
 import { TOKENS } from './tokens';
 import type { IdempotencyStore, LedgerRepository, TradesRepository, ReferralRepository, UserRepository } from './ports/repositories';
 import { CommissionService } from '../infrastructure/services/commission.service';
-import { DefaultPolicy } from '../infrastructure/policies/default-policy';
 import { ClaimService } from '../infrastructure/services/claim.service';
 
 @Injectable()
 export class TradesAppService {
-  private readonly commission = new CommissionService(new DefaultPolicy());
-
   constructor(
     @Inject(TOKENS.TradesRepository) private readonly tradesRepo: TradesRepository,
     @Inject(TOKENS.IdempotencyStore) private readonly idem: IdempotencyStore,
@@ -16,6 +13,7 @@ export class TradesAppService {
     @Inject(TOKENS.ReferralRepository) private readonly referralRepo: ReferralRepository,
     @Inject(TOKENS.UserRepository) private readonly userRepo: UserRepository,
     private readonly claimService: ClaimService,
+    private readonly commission: CommissionService,
   ) {}
 
   async processTrade(params: { 

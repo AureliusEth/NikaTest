@@ -1,0 +1,245 @@
+{
+    "address": "EkEP6vRisXSE4TSBDvr8FcpzZgSaYeVKc9uRdFpnXQVB",
+    "metadata": {
+        "name": "nika_treasury",
+        "version": "0.1.0",
+        "spec": "0.1.0",
+        "description": "Created with Anchor"
+    },
+    "instructions": [
+        {
+            "name": "initialize",
+            "discriminator": [
+                175,
+                175,
+                109,
+                31,
+                13,
+                152,
+                155,
+                237
+            ],
+            "accounts": [
+                {
+                    "name": "state",
+                    "writable": true,
+                    "signer": true
+                },
+                {
+                    "name": "authority",
+                    "writable": true,
+                    "signer": true
+                },
+                {
+                    "name": "system_program",
+                    "address": "11111111111111111111111111111111"
+                }
+            ],
+            "args": [
+                {
+                    "name": "merkle_root",
+                    "type": {
+                        "array": [
+                            "u8",
+                            32
+                        ]
+                    }
+                }
+            ]
+        },
+        {
+            "name": "update_root",
+            "discriminator": [
+                58,
+                195,
+                57,
+                246,
+                116,
+                198,
+                170,
+                138
+            ],
+            "accounts": [
+                {
+                    "name": "state",
+                    "writable": true
+                },
+                {
+                    "name": "authority",
+                    "signer": true,
+                    "relations": [
+                        "state"
+                    ]
+                }
+            ],
+            "args": [
+                {
+                    "name": "new_root",
+                    "type": {
+                        "array": [
+                            "u8",
+                            32
+                        ]
+                    }
+                }
+            ]
+        },
+        {
+            "name": "verify_proof",
+            "discriminator": [
+                217,
+                211,
+                191,
+                110,
+                144,
+                13,
+                186,
+                98
+            ],
+            "accounts": [
+                {
+                    "name": "state"
+                }
+            ],
+            "args": [
+                {
+                    "name": "user_id",
+                    "type": "string"
+                },
+                {
+                    "name": "token",
+                    "type": "string"
+                },
+                {
+                    "name": "amount_str",
+                    "type": "string"
+                },
+                {
+                    "name": "proof",
+                    "type": {
+                        "vec": {
+                            "array": [
+                                "u8",
+                                32
+                            ]
+                        }
+                    }
+                }
+            ],
+            "returns": "bool"
+        },
+        {
+            "name": "view_root",
+            "discriminator": [
+                57,
+                250,
+                12,
+                80,
+                132,
+                42,
+                106,
+                167
+            ],
+            "accounts": [
+                {
+                    "name": "state"
+                }
+            ],
+            "args": [],
+            "returns": {
+                "array": [
+                    "u8",
+                    32
+                ]
+            }
+        }
+    ],
+    "accounts": [
+        {
+            "name": "State",
+            "discriminator": [
+                216,
+                146,
+                107,
+                94,
+                104,
+                75,
+                182,
+                177
+            ]
+        }
+    ],
+    "events": [
+        {
+            "name": "ProofVerified",
+            "discriminator": [
+                181,
+                54,
+                148,
+                211,
+                237,
+                73,
+                131,
+                232
+            ]
+        }
+    ],
+    "errors": [
+        {
+            "code": 6000,
+            "name": "Unauthorized",
+            "msg": "Unauthorized"
+        }
+    ],
+    "types": [
+        {
+            "name": "ProofVerified",
+            "type": {
+                "kind": "struct",
+                "fields": [
+                    {
+                        "name": "user_id",
+                        "type": "string"
+                    },
+                    {
+                        "name": "token",
+                        "type": "string"
+                    },
+                    {
+                        "name": "amount_str",
+                        "type": "string"
+                    },
+                    {
+                        "name": "valid",
+                        "type": "bool"
+                    }
+                ]
+            }
+        },
+        {
+            "name": "State",
+            "type": {
+                "kind": "struct",
+                "fields": [
+                    {
+                        "name": "merkle_root",
+                        "type": {
+                            "array": [
+                                "u8",
+                                32
+                            ]
+                        }
+                    },
+                    {
+                        "name": "version",
+                        "type": "u64"
+                    },
+                    {
+                        "name": "authority",
+                        "type": "pubkey"
+                    }
+                ]
+            }
+        }
+    ]
+}

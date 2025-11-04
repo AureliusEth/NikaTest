@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { createHash } from 'crypto';
+import { keccak256 } from 'ethers';
 import MerkleTree from 'merkletreejs';
 import {
   MerkleTreeService as IMerkleTreeService,
@@ -16,28 +16,33 @@ import { PrismaService } from '../prisma/services/prisma.service';
  * 
  * How it works:
  * 1. Aggregate all claimable balances by user
- * 2. Create leaf nodes: hash(beneficiaryId + token + amount)
+ * 2. Create leaf nodes: keccak256(beneficiaryId + token + amount)
  * 3. Build merkle tree from leaves
  * 4. Store root hash (this is what goes on-chain)
  * 5. Users can generate proofs to claim their funds
+ * 
+ * NOTE: Uses keccak256 for hashing to match EVM and SVM contracts.
  */
 @Injectable()
 export class MerkleTreeService implements IMerkleTreeService {
   constructor(private readonly prisma: PrismaService) {}
 
   /**
-   * Creates a leaf hash for a claimable balance entry
+   * Creates a leaf hash for a claimable balance entry using keccak256
    */
   private createLeaf(balance: ClaimableBalance): Buffer {
     const data = `${balance.beneficiaryId}:${balance.token}:${balance.totalAmount.toFixed(8)}`;
-    return Buffer.from(createHash('sha256').update(data).digest('hex'), 'hex');
+    // keccak256 returns a hex string with '0x' prefix, convert to buffer
+    const hash = keccak256(Buffer.from(data));
+    return Buffer.from(hash.slice(2), 'hex');
   }
 
   /**
-   * SHA256 hash function for merkle tree
+   * keccak256 hash function for merkle tree (matches EVM/SVM contracts)
    */
   private hashFn(data: Buffer): Buffer {
-    return Buffer.from(createHash('sha256').update(data).digest('hex'), 'hex');
+    const hash = keccak256(data);
+    return Buffer.from(hash.slice(2), 'hex');
   }
 
   generateTree(
@@ -193,13 +198,17 @@ export class MerkleTreeService implements IMerkleTreeService {
   }
 
   /**
-   * Gets all claimable balances from the ledger
+   * Gets all UNCLAIMED balances from the ledger
+   * 
+   * CRITICAL: This must exclude already-claimed entries to prevent double-spending!
+   * We calculate: Unclaimed = Total Earned - Total Claimed
    */
   private async getClaimableBalances(chain: 'EVM' | 'SVM', token: string): Promise<ClaimableBalance[]> {
-    const results = await this.prisma.$queryRaw<Array<{ beneficiaryId: string; totalAmount: string }>>`
+    // Get total earned per user from ledger (filtered by chain via join with Trade table)
+    const earnedResults = await this.prisma.$queryRaw<Array<{ beneficiaryId: string; totalEarned: string }>>`
       SELECT 
         l."beneficiaryId",
-        SUM(l.amount)::text as "totalAmount"
+        SUM(l.amount)::text as "totalEarned"
       FROM "CommissionLedgerEntry" l
       INNER JOIN "Trade" t ON l."sourceTradeId" = t.id
       WHERE l.destination = 'claimable'
@@ -209,11 +218,40 @@ export class MerkleTreeService implements IMerkleTreeService {
       HAVING SUM(l.amount) > 0
     `;
 
-    return results.map(r => ({
-      beneficiaryId: r.beneficiaryId,
-      token,
-      totalAmount: parseFloat(r.totalAmount),
-    }));
+    // Get total claimed per user from claim records
+    const claimedResults = await this.prisma.$queryRaw<Array<{ userId: string; totalClaimed: string }>>`
+      SELECT 
+        "userId",
+        SUM(amount)::text as "totalClaimed"
+      FROM "ClaimRecord"
+      WHERE chain = ${chain}
+        AND token = ${token}
+      GROUP BY "userId"
+    `;
+
+    // Build map of claimed amounts
+    const claimedByUser = new Map<string, number>();
+    for (const row of claimedResults) {
+      claimedByUser.set(row.userId, parseFloat(row.totalClaimed));
+    }
+
+    // Calculate unclaimed balances (earned - claimed)
+    const results: ClaimableBalance[] = [];
+    for (const row of earnedResults) {
+      const earned = parseFloat(row.totalEarned);
+      const claimed = claimedByUser.get(row.beneficiaryId) || 0;
+      const unclaimed = earned - claimed;
+
+      if (unclaimed > 0) {
+        results.push({
+          beneficiaryId: row.beneficiaryId,
+          token,
+          totalAmount: unclaimed,
+        });
+      }
+    }
+
+    return results;
   }
 }
 

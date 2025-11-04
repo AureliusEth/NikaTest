@@ -39,6 +39,11 @@ export class ReferralController {
   async activity(@Req() req: any) {
     return this.app.getActivity(req.user.id);
   }
+
+  @Get('hourly-earnings')
+  async hourlyEarnings(@Req() req: any) {
+    return this.app.getHourlyEarnings(req.user.id, 24);
+  }
 }
 
 

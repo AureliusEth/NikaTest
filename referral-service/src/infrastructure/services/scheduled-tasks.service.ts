@@ -3,6 +3,7 @@ import { Cron, CronExpression } from '@nestjs/schedule';
 import { MerkleTreeService } from '../services/merkle-tree.service';
 import { EvmBlockchainService } from '../services/evm-blockchain.service';
 import { SvmBlockchainService } from '../services/svm-blockchain.service';
+import { getContractAddressForChain } from '../../common/chain-constants';
 
 /**
  * Scheduled Tasks Service
@@ -52,7 +53,7 @@ export class ScheduledTasksService {
           } else {
             this.logger.log(
               `Skipping on-chain update (set AUTO_UPDATE_MERKLE_ROOTS=true to enable). ` +
-              `Manual update required at: ${this.getContractAddress(chain, token)}`
+              `Manual update required at: ${getContractAddressForChain(chain, token as 'XP' | 'USDC')}`
             );
           }
         } catch (error: any) {
@@ -75,7 +76,7 @@ export class ScheduledTasksService {
     token: string,
     root: string
   ): Promise<void> {
-    const contractAddress = this.getContractAddress(chain, token);
+    const contractAddress = getContractAddressForChain(chain, token as 'XP' | 'USDC');
     
     if (contractAddress === 'NOT_CONFIGURED') {
       this.logger.warn(`Contract address not configured for ${chain}/${token}`);
@@ -108,32 +109,6 @@ export class ScheduledTasksService {
         error.stack
       );
     }
-  }
-
-  /**
-   * Get contract address for chain/token
-   */
-  private getContractAddress(chain: 'EVM' | 'SVM', token: string): string {
-    const envKey = `${chain}_${token}_CONTRACT_ADDRESS`;
-    const address = process.env[envKey];
-    
-    if (address) {
-      return address;
-    }
-    
-    // Fallback to defaults
-    const addresses = {
-      EVM: {
-        XP: process.env.EVM_XP_CONTRACT_ADDRESS || 'NOT_CONFIGURED',
-        USDC: process.env.EVM_USDC_CONTRACT_ADDRESS || 'NOT_CONFIGURED',
-      },
-      SVM: {
-        XP: process.env.SVM_XP_CONTRACT_ADDRESS || 'NOT_CONFIGURED',
-        USDC: process.env.SVM_USDC_CONTRACT_ADDRESS || 'NOT_CONFIGURED',
-      },
-    };
-    
-    return addresses[chain]?.[token] || 'NOT_CONFIGURED';
   }
 }
 

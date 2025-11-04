@@ -29,9 +29,18 @@ describe('DefaultPolicy', () => {
       userCashbackRate: 0,
       ancestors: ['A1'],
     });
-    expect(splits.length).toBe(1);
-    expect(splits[0].level).toBe(1);
-    expect(splits[0].amount).toBeCloseTo(15);
+    // Should have 2 splits: Level 1 commission + Treasury remainder
+    expect(splits.length).toBe(2);
+    
+    // Level 1 commission (30% of 50 = 15)
+    const level1 = splits.find(s => s.level === 1);
+    expect(level1?.amount).toBeCloseTo(15);
+    expect(level1?.destination).toBe('claimable');
+    
+    // Treasury gets remainder (50 - 15 = 35)
+    const treasury = splits.find(s => s.destination === 'treasury');
+    expect(treasury?.amount).toBeCloseTo(35);
+    expect(treasury?.level).toBe(-1);
   });
 });
 

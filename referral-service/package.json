@@ -7,40 +7,68 @@
   "license": "UNLICENSED",
   "scripts": {
     "build": "nest build",
-    "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\"",
-    "start": "nest start",
+    "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\" \"tests/**/*.ts\"",
+    "start": "bash scripts/start-backend.sh",
     "start:dev": "nest start --watch",
     "start:debug": "nest start --debug --watch",
     "start:prod": "node dist/src/main",
-    "lint": "eslint \"{src,apps,libs,test}/**/*.ts\" --fix",
+    "restart": "npm run start",
+    "lint": "eslint \"{src,apps,libs,test,tests}/**/*.ts\" --fix",
     "test": "jest",
     "test:watch": "jest --watch",
-    "test:cov": "jest --coverage",
+    "test:cov": "jest --coverage --coverageDirectory=tests/coverage",
     "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",
-    "test:e2e": "jest --config ./test/jest-e2e.json",
+    "test:unit": "jest tests/unit",
+    "test:unit:domain": "jest tests/unit/domain",
+    "test:unit:domain:policies": "jest tests/unit/domain/policies",
+    "test:unit:domain:services": "jest tests/unit/domain/services",
+    "test:unit:domain:values": "jest tests/unit/domain/value-objects",
+    "test:unit:app": "jest tests/unit/application",
+    "test:unit:infra": "jest tests/unit/infrastructure",
+    "test:integration": "jest tests/integration",
+    "test:integration:claims": "jest tests/integration/claims",
+    "test:integration:referrals": "jest tests/integration/referrals",
+    "test:integration:merkle": "jest tests/integration/merkle",
+    "test:integration:blockchain": "jest tests/integration/blockchain",
+    "test:integration:repos": "jest tests/integration/repositories",
+    "test:contracts": "npm run test:contracts:evm && npm run test:contracts:svm",
+    "test:contracts:evm": "cd ../contracts/evm && forge test -vvv",
+    "test:contracts:svm": "cd ../contracts/svm/nika-treasury && anchor test --skip-local-validator",
+    "test:e2e": "jest tests/e2e --runInBand",
+    "test:all": "npm run test:unit && npm run test:integration",
+    "test:all:verbose": "npm run test:unit && npm run test:integration && npm run test:e2e",
+    "test:e2e-full": "ts-node scripts/test-e2e.ts",
+    "test:e2e-live": "ts-node scripts/test-e2e-live-contracts.ts",
+    "test:e2e-phase1-referrals": "ts-node scripts/test-e2e-phase1-referrals.ts",
+    "test:e2e-phase1-commissions": "ts-node scripts/test-e2e-phase1-commissions.ts",
+    "test:e2e-phase1-merkle-claims": "ts-node scripts/test-e2e-phase1-merkle-claims.ts",
+    "test:e2e-phase2-contracts": "ts-node scripts/test-e2e-phase2-contracts.ts",
+    "test:e2e-phase3-edge-cases": "ts-node scripts/test-e2e-phase3-edge-cases.ts",
+    "test:e2e-all-phases": "npm run test:e2e-phase1-referrals && npm run test:e2e-phase1-commissions && npm run test:e2e-phase1-merkle-claims && npm run test:e2e-phase2-contracts && npm run test:e2e-phase3-edge-cases",
     "prisma:generate": "prisma generate && node scripts/post-prisma-generate.js",
     "mock-trade-flow": "ts-node scripts/mock-trade-flow.ts",
     "mock-comprehensive": "ts-node scripts/mock-comprehensive-trades.ts",
-    "generate-trades": "ts-node scripts/generate-trades.ts"
+    "generate-trades": "ts-node scripts/generate-trades.ts",
+    "update-cashback": "ts-node scripts/update-cashback-rates.ts"
   },
   "dependencies": {
+    "@coral-xyz/anchor": "^0.32.1",
     "@nestjs/common": "^11.0.1",
     "@nestjs/core": "^11.0.1",
     "@nestjs/platform-express": "^11.0.1",
+    "@nestjs/schedule": "^4.1.0",
     "@nestjs/throttler": "^6.4.0",
     "@prisma/client": "^6.18.0",
+    "@solana/web3.js": "^1.95.0",
     "class-transformer": "^0.5.1",
     "class-validator": "^0.14.2",
     "cookie-parser": "^1.4.7",
     "dotenv": "^17.2.3",
+    "ethers": "^6.13.0",
     "jose": "^6.1.0",
     "merkletreejs": "^0.6.0",
     "reflect-metadata": "^0.2.2",
-    "rxjs": "^7.8.1",
-    "ethers": "^6.13.0",
-    "@solana/web3.js": "^1.95.0",
-    "@coral-xyz/anchor": "^0.32.1",
-    "@nestjs/schedule": "^4.1.0"
+    "rxjs": "^7.8.1"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3.2.0",
@@ -75,15 +103,23 @@
       "json",
       "ts"
     ],
-    "rootDir": "src",
+    "roots": [
+      "<rootDir>/src",
+      "<rootDir>/tests"
+    ],
     "testRegex": ".*\\.spec\\.ts$",
     "transform": {
       "^.+\\.(t|j)s$": "ts-jest"
     },
     "collectCoverageFrom": [
-      "**/*.(t|j)s"
+      "src/**/*.(t|j)s",
+      "!src/**/*.spec.ts",
+      "!src/main.ts"
     ],
-    "coverageDirectory": "../coverage",
-    "testEnvironment": "node"
+    "coverageDirectory": "tests/coverage",
+    "testEnvironment": "node",
+    "moduleNameMapper": {
+      "^@/(.*)$": "<rootDir>/src/$1"
+    }
   }
 }

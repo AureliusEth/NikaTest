@@ -1,5 +1,6 @@
 import { ReferralAppService } from './referral.app.service';
 import type { IdempotencyStore, LedgerRepository, ReferralRepository, UserRecord, UserRepository } from './ports/repositories';
+import { ReferralService } from '../infrastructure/services/referral.service';
 
 class InMemUsers implements UserRepository {
   private users = new Map<string, UserRecord & { code?: string }>();
@@ -16,6 +17,12 @@ class InMemUsers implements UserRepository {
     if (!u) throw new Error('missing user');
     if (!u.code) { u.code = `ref_${userId}`; }
     return u.code!;
+  }
+  async setEmail(userId: string, email: string): Promise<void> {
+    const u = this.users.get(userId);
+    if (u) {
+      u.email = email;
+    }
   }
 }
 
@@ -41,6 +48,12 @@ class InMemLedger implements LedgerRepository {
     for (const m of mine) { byLevel[m.level] = (byLevel[m.level]||0)+m.amount; total+=m.amount; }
     return { total, byLevel };
   }
+  async getRefereeEarnings(userId: string) {
+    return [];
+  }
+  async getRecentActivity(userId: string, limit?: number) {
+    return [];
+  }
 }
 
 class NoopIdem implements IdempotencyStore { async exists(){return false;} async put(){}}
@@ -53,7 +66,8 @@ describe('ReferralAppService', () => {
     ]);
     const ref = new InMemRef();
     const ledger = new InMemLedger();
-    const svc = new ReferralAppService(users as any, ref as any, ledger as any, new NoopIdem() as any);
+    const referralService = new ReferralService(ref as any);
+    const svc = new ReferralAppService(users as any, ref as any, ledger as any, new NoopIdem() as any, null as any, referralService);
 
     const code = await svc.createOrGetReferralCode('U');
     expect(code).toBe('ref_U');
@@ -68,7 +82,8 @@ describe('ReferralAppService', () => {
     const ref = new InMemRef([{ referrerId: 'R', refereeId: 'L1' }, { referrerId: 'L1', refereeId: 'L2' }]);
     const ledger = new InMemLedger();
     ledger.entries.push({ beneficiaryId: 'R', level: 1, amount: 3 });
-    const svc = new ReferralAppService(users as any, ref as any, ledger as any, new NoopIdem() as any);
+    const referralService = new ReferralService(ref as any);
+    const svc = new ReferralAppService(users as any, ref as any, ledger as any, new NoopIdem() as any, null as any, referralService);
 
     const net = await svc.getNetwork('R');
     expect(net.level1).toContain('L1');
