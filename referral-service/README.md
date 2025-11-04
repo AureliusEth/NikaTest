@@ -6,7 +6,7 @@ A production-ready referral and commission tracking system with blockchain integ
 
 ### Prerequisites
 - Node.js 18+ and npm
-- Docker & Docker Compose (for PostgreSQL)  
+- Docker & Docker Compose **OR** Podman (for PostgreSQL)  
 - (Optional) Solana CLI for contract deployment
 
 ### Installation
@@ -15,8 +15,19 @@ A production-ready referral and commission tracking system with blockchain integ
 # 1. Install dependencies
 npm install
 
-# 2. Start PostgreSQL with Docker
+# 2. Start PostgreSQL
+# Choose either Docker or Podman:
+
+# Using Docker Compose (recommended):
 docker compose up -d
+
+# OR using Podman:
+podman run --name referral_postgres \
+  -e POSTGRES_USER=postgres \
+  -e POSTGRES_PASSWORD=postgres \
+  -e POSTGRES_DB=referral \
+  -p 5432:5432 \
+  -d docker.io/library/postgres:16-alpine
 
 # This starts PostgreSQL on localhost:5432
 # Database: referral
@@ -24,8 +35,7 @@ docker compose up -d
 # Password: postgres
 
 # 3. Set up environment variables
-cp .env.example .env
-# Edit .env with your configuration (see below)
+# The .env file is already included in the repository with all necessary configuration
 
 # 4. Set up database
 npx prisma migrate dev
@@ -42,7 +52,7 @@ npm run start:dev
 
 ### Alternative: Manual PostgreSQL Setup
 
-If you prefer not to use Docker:
+If you prefer not to use Docker or Podman:
 
 ```bash
 # Install PostgreSQL locally
@@ -57,7 +67,7 @@ DATABASE_URL="postgresql://YOUR_USER:YOUR_PASSWORD@localhost:5432/referral?schem
 
 ## 🔧 Environment Configuration
 
-Create a `.env` file in the project root:
+The following environment variables are used (example values):
 
 ```bash
 # Database
@@ -116,10 +126,18 @@ npm run test:watch       # Watch mode
 
 ### Database
 ```bash
+# Using Docker Compose:
 docker compose up -d        # Start PostgreSQL
 docker compose down         # Stop PostgreSQL
 docker compose down -v      # Stop and remove volumes (fresh start)
 
+# Using Podman:
+podman start referral_postgres   # Start existing container
+podman stop referral_postgres    # Stop container
+podman rm referral_postgres      # Remove container
+podman volume prune              # Clean up volumes (optional)
+
+# Database management (works with both):
 npx prisma migrate dev      # Create and apply migration
 npx prisma generate         # Generate Prisma client
 npx prisma studio           # Open Prisma Studio (DB GUI)
@@ -156,69 +174,99 @@ npm run test:cov
 # Coverage report will be in coverage/lcov-report/index.html
 ```
 
-### Manual Testing
+### Testing the Application
 
-#### 1. Generate Referral Code
+The easiest way to test the application is through the **frontend interface** which handles authentication automatically.
+
+#### Start Both Backend and Frontend
+
+**Terminal 1 - Backend:**
 ```bash
-curl -X POST http://localhost:3000/api/referral/generate \
-  -H "x-user-id: user123" \
-  -H "Content-Type: application/json"
-
-# Response: { "code": "ref_abc123" }
+cd referral-service
+npm run start:dev
+# Backend runs on http://localhost:3000
 ```
 
-#### 2. Register with Referral Code
+**Terminal 2 - Frontend:**
 ```bash
-curl -X POST http://localhost:3000/api/referral/register \
-  -H "x-user-id: user456" \
+cd frontend
+npm install
+npm run dev
+# Frontend runs on http://localhost:3001
+```
+
+#### Testing Flow
+
+1. **Open Frontend**: Navigate to `http://localhost:3001`
+
+2. **Sign Up/Login**: 
+   - Enter your email (e.g., `user1@test.com`)
+   - Optionally use an invite code from another user
+   - The system automatically creates a session
+
+3. **Get Your Referral Code**: 
+   - Click "Generate Referral Code" on the dashboard
+   - Copy your code to share with others
+
+4. **Sign Up Another User with Referral**:
+   - Open an incognito window or different browser
+   - Sign up with a different email (e.g., `user2@test.com`)
+   - Use the referral code from User 1
+   - This creates a referral link (User 2 → User 1)
+
+5. **Generate a Trade**:
+   - As User 2, click "Generate Trade"
+   - This simulates a trade with a 100 XP fee
+   - User 2 gets 10% cashback (10 XP)
+   - User 1 gets 30% commission (30 XP)
+   - Treasury gets 60% (60 XP)
+
+6. **View Earnings**:
+   - Check the dashboard to see your earnings
+   - View your referral network
+
+7. **Claim XP**:
+   - Click "Claim XP" 
+   - Merkle roots are automatically generated
+   - The system verifies your proof and processes the claim
+
+#### Manual API Testing (Advanced)
+
+If you need to test the API directly, use the login endpoint first to get a session cookie:
+
+```bash
+# 1. Login to get a session cookie
+curl -X POST http://localhost:3000/api/auth/login \
   -H "Content-Type: application/json" \
-  -d '{ "code": "ref_abc123" }'
+  -d '{"email": "user1@test.com"}' \
+  -c cookies.txt
 
-# Response: { "level": 1 }
-```
+# 2. Use the session cookie for subsequent requests
+curl http://localhost:3000/api/referral/earnings \
+  -b cookies.txt
 
-#### 3. Mock a Trade (generates commissions)
-```bash
+# 3. Generate a referral code
+curl -X POST http://localhost:3000/api/referral/generate \
+  -b cookies.txt
+
+# 4. Generate a trade (simulates user activity)
 curl -X POST http://localhost:3000/api/trades/mock \
-  -H "x-user-id: user456" \
+  -b cookies.txt \
   -H "Content-Type: application/json" \
   -d '{
     "tradeId": "trade001",
-    "userId": "user456",
     "feeAmount": 100,
     "token": "XP"
   }'
 
-# Response: { "ok": true }
-```
-
-#### 4. Check Network
-```bash
-curl http://localhost:3000/api/user/network \
-  -H "x-user-id: user123"
-
-# Response: { "level1": [...], "level2": [...], "level3": [...] }
-```
-
-#### 5. Check Earnings
-```bash
-curl http://localhost:3000/api/referral/earnings \
-  -H "x-user-id: user123"
-
-# Response: { "total": 30, "byLevel": { "1": 30 } }
-```
-
-#### 6. Claim XP (with merkle proof)
-```bash
+# 5. Claim XP
 curl -X POST http://localhost:3000/api/merkle/claim \
-  -H "x-user-id: user123" \
+  -b cookies.txt \
   -H "Content-Type: application/json" \
   -d '{
     "chain": "SVM",
     "token": "XP"
   }'
-
-# Response: { "success": true, "claimId": "...", "amount": 30 }
 ```
 
 ## 🏗️ Architecture
@@ -268,38 +316,57 @@ curl -X POST http://localhost:3000/api/merkle/claim \
 ## 📖 API Documentation
 
 ### Authentication
-All endpoints require `x-user-id` header (FakeAuthGuard for development).
+
+The application uses **session-based authentication** with httpOnly cookies:
+
+1. Users login via `/api/auth/login` with their email
+2. The backend creates a JWT session token
+3. The token is stored in an httpOnly cookie (secure, can't be accessed by JavaScript)
+4. All subsequent requests automatically include the cookie
+5. The backend validates the session on each request
+
+**No manual headers needed** - the browser handles authentication automatically!
 
 ### Endpoints
+
+#### Authentication Endpoints
+
+**Login/Signup**
+```
+POST /api/auth/login
+Body: { 
+  email: string,
+  inviteCode?: string  // Optional referral code
+}
+Response: { 
+  userId: string, 
+  level?: number,  // If registered with invite code
+  isExistingUser: boolean,
+  message: string 
+}
+Sets cookie: session=<jwt_token>
+```
 
 #### Referral Endpoints
 
 **Generate Referral Code**
 ```
 POST /api/referral/generate
-Headers: x-user-id: <userId>
+Auth: Session cookie (automatic)
 Response: { code: string }
-```
-
-**Register with Code**
-```
-POST /api/referral/register
-Headers: x-user-id: <userId>
-Body: { code: string }
-Response: { level: number }
 ```
 
 **Get Network**
 ```
 GET /api/user/network
-Headers: x-user-id: <userId>
+Auth: Session cookie (automatic)
 Response: { level1: User[], level2: User[], level3: User[] }
 ```
 
 **Get Earnings**
 ```
 GET /api/referral/earnings
-Headers: x-user-id: <userId>
+Auth: Session cookie (automatic)
 Response: { total: number, byLevel: Record<number, number> }
 ```
 
@@ -308,10 +375,9 @@ Response: { total: number, byLevel: Record<number, number> }
 **Mock Trade** (Development)
 ```
 POST /api/trades/mock
-Headers: x-user-id: <userId>
+Auth: Session cookie (automatic)
 Body: {
   tradeId: string,
-  userId: string,
   feeAmount: number,
   token?: string (default: "XP")
 }
@@ -340,16 +406,21 @@ Response: { root: string, version: number }
 **Generate Proof**
 ```
 GET /api/merkle/proof/:chain/:token
-Headers: x-user-id: <userId>
+Auth: Session cookie (automatic)
 Response: { proof: string[], amount: number }
 ```
 
 **Claim XP**
 ```
 POST /api/merkle/claim
-Headers: x-user-id: <userId>
+Auth: Session cookie (automatic)
 Body: { chain: "EVM" | "SVM", token: string }
 Response: { success: boolean, claimId?: string, amount?: number }
+
+Description: Claims XP tokens for the authenticated user.
+- Automatically generates Merkle roots if needed
+- Verifies Merkle proof on-chain
+- Records the claim in the database
 ```
 
 ## 🗄️ Database Schema
@@ -443,6 +514,8 @@ curl http://localhost:3000/health
 ## 🐛 Troubleshooting
 
 ### Database Connection Issues
+
+**Using Docker Compose:**
 ```bash
 # Check if PostgreSQL container is running
 docker compose ps
@@ -460,7 +533,36 @@ docker compose exec postgres psql -U postgres -d referral
 docker compose down -v
 docker compose up -d
 npx prisma migrate dev
+```
 
+**Using Podman:**
+```bash
+# Check if PostgreSQL container is running
+podman ps | grep referral_postgres
+
+# Restart PostgreSQL
+podman restart referral_postgres
+
+# View PostgreSQL logs
+podman logs referral_postgres
+
+# Connect to PostgreSQL directly
+podman exec -it referral_postgres psql -U postgres -d referral
+
+# Reset database (fresh start)
+podman stop referral_postgres
+podman rm referral_postgres
+podman run --name referral_postgres \
+  -e POSTGRES_USER=postgres \
+  -e POSTGRES_PASSWORD=postgres \
+  -e POSTGRES_DB=referral \
+  -p 5432:5432 \
+  -d docker.io/library/postgres:16-alpine
+npx prisma migrate dev
+```
+
+**General (works with both):**
+```bash
 # Regenerate Prisma client
 npx prisma generate
 ```
